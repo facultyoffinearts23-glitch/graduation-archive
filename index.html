@@ -4,16 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>منظومة توثيق مشاريع التخرج | كلية الفنون والتصميم</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<!-- Google Fonts: Cairo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = {
     theme: {
       extend: {
-        fontFamily: { sans: ['IBM Plex Sans Arabic', 'Cairo', 'sans-serif'] },
+        fontFamily: { sans: ['Cairo', 'sans-serif'] },
         colors: {
           primary: { DEFAULT: '#1e3a8a', light: '#2d4fa0', dark: '#172d6e' },
           gold: '#c8a84b',
@@ -27,7 +28,7 @@
 <style>
 /* ─── Reset & Base ─── */
 *, *::before, *::after { box-sizing: border-box; }
-body { font-family: 'IBM Plex Sans Arabic', 'Cairo', sans-serif; background: #f0f2f8; color: #1a1f36; }
+body { font-family: 'Cairo', sans-serif; background: #f0f2f8; color: #1a1f36; }
 
 /* ─── CSS Animations (FIX: كانت مُعرَّفة خطأً عبر tailwind config بعد التحميل) ─── */
 @keyframes fadeSlideIn {
@@ -182,8 +183,8 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
 
       <!-- Logo -->
       <div class="flex items-center gap-4">
-        <div class="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shadow-inner flex-shrink-0">
-          <i class="fas fa-graduation-cap text-4xl text-yellow-400 -rotate-12 hover:rotate-0 transition-transform duration-300"></i>
+        <div class="w-16 h-16 rounded-2xl bg-white overflow-hidden border border-white/20 flex items-center justify-center shadow-inner flex-shrink-0">
+          <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663672341033/DPcqnCesIGqshKoH.webp" alt="شعار الكلية" class="w-full h-full object-cover">
         </div>
         <div>
           <h1 class="text-2xl font-black tracking-tight">جامعة طرابلس</h1>
@@ -342,7 +343,7 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
 <footer class="bg-slate-900 text-slate-400 py-5 mt-auto">
   <div class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-2 text-sm">
     <p class="text-slate-200 font-bold">جامعة طرابلس — كلية الفنون والتصميم</p>
-    <p>إعداد: د. محمد اقميع &copy; 2026 | منظومة الأرشفة — الإصدار 3.0</p>
+    <p>إعداد: د. محمد اقميع &copy; 2026 | قسم البحوث والاستشارات |</p>
   </div>
 </footer>
 
@@ -1015,7 +1016,9 @@ function printProject(id) {
   document.getElementById('printArea').innerHTML = `
     <div style="direction:rtl;font-family:'Cairo',sans-serif;color:#000;max-width:800px;margin:0 auto;padding:20px">
       <div style="text-align:center;border-bottom:3px solid #1e3a8a;padding-bottom:20px;margin-bottom:30px">
-        <div style="font-size:52px;margin-bottom:8px">🎓</div>
+        <div style="margin-bottom:15px">
+          <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663672341033/DPcqnCesIGqshKoH.webp" alt="شعار الكلية" style="width:100px;height:100px;margin:0 auto;object-fit:contain">
+        </div>
         <h1 style="font-size:26px;font-weight:900;margin:0;color:#1e3a8a">جامعة طرابلس</h1>
         <h2 style="font-size:20px;font-weight:700;margin:6px 0 0;color:#333">كلية الفنون والتصميم</h2>
         <p style="font-size:14px;margin:8px 0 0;text-decoration:underline;font-weight:bold;color:#555">بطاقة بيانات مشروع تخرج</p>
@@ -1046,13 +1049,12 @@ function printProject(id) {
           `).join('')}
         </tbody>
       </table>
-      <div style="display:flex;justify-content:space-between;margin-top:50px;padding:0 10px">
-        ${['توقيع الأستاذ المشرف','توقيع رئيس القسم','الاعتماد (العميد)'].map(label => `
-          <div style="text-align:center;width:30%">
-            <p style="font-weight:bold;margin-bottom:35px;font-size:13px">${label}</p>
-            <p style="border-top:1px solid #333;padding-top:5px;font-size:12px;color:#888">التوقيع والختم</p>
+      <div style="display: flex; justify-content: space-between; margin-top: 60px; padding: 0 20px;">
+          <div style="text-align: center; width: 23%;">
+              <p style="font-weight: bold; margin-bottom: 40px; font-size: 14px;">مسؤول مكتبة الكلية</p>
+              <p style="font-size: 12px; color: #666;">الإسم وختم المكتبة</p>
+              <p>..................................</p>
           </div>
-        `).join('')}
       </div>
       <div style="margin-top:60px;text-align:center;font-size:11px;color:#888;border-top:1px solid #ddd;padding-top:12px">
         <p>طُبعت هذه البطاقة من منظومة أرشفة مشاريع التخرج — كلية الفنون والتصميم | تاريخ الطباعة: ${today}</p>
