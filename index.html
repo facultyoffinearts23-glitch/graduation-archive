@@ -9,6 +9,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<!-- مكتبة QR Code — تدعم QRCode.toDataURL() الـ async -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = {
@@ -30,7 +32,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 body { font-family: 'Cairo', sans-serif; background: #f0f2f8; color: #1a1f36; }
 
-/* ─── CSS Animations (FIX: كانت مُعرَّفة خطأً عبر tailwind config بعد التحميل) ─── */
+/* ─── CSS Animations ─── */
 @keyframes fadeSlideIn {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -196,7 +198,6 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
       <!-- Actions -->
       <div class="flex items-center gap-3 w-full md:w-auto flex-wrap justify-center md:justify-end">
 
-        <!-- Connection Status (FIX: جديد - مؤشر الاتصال بـ GAS) -->
         <div id="connectionStatus" class="badge border text-xs font-bold px-3 py-1.5 offline" title="حالة الاتصال بـ Google Sheets">
           <span class="w-2 h-2 rounded-full bg-current opacity-80 inline-block"></span>
           <span id="connectionText">وضع محلي</span>
@@ -223,7 +224,7 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
 <!-- ─── MAIN ─── -->
 <main class="container mx-auto px-4 py-6 flex-grow flex flex-col gap-5">
 
-  <!-- GAS Config Banner (يظهر عند عدم تهيئة الرابط) -->
+  <!-- GAS Config Banner -->
   <div id="gasBanner" class="hidden bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
     <div class="flex items-start gap-3">
       <i class="fas fa-cloud-arrow-up text-blue-500 text-xl mt-0.5"></i>
@@ -238,7 +239,7 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
   </div>
 
   <!-- Statistics -->
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+  <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
     <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
       <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-layer-group"></i></div>
       <div>
@@ -254,17 +255,10 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
       </div>
     </div>
     <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
-      <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-palette"></i></div>
+      <div class="w-11 h-11 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-user-tie"></i></div>
       <div>
-        <p class="text-xs text-gray-400 font-bold uppercase tracking-wider">أعمال فنية</p>
-        <h4 id="statPractical" class="text-2xl font-black text-gray-800">0</h4>
-      </div>
-    </div>
-    <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
-      <div class="w-11 h-11 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-lg shrink-0"><i class="fas fa-book-open"></i></div>
-      <div>
-        <p class="text-xs text-gray-400 font-bold uppercase tracking-wider">بحوث نظرية</p>
-        <h4 id="statTheoretical" class="text-2xl font-black text-gray-800">0</h4>
+        <p class="text-xs text-gray-400 font-bold uppercase tracking-wider">المشرفين</p>
+        <h4 id="statSupervisors" class="text-2xl font-black text-gray-800">0</h4>
       </div>
     </div>
   </div>
@@ -275,11 +269,8 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
       <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400"><i class="fas fa-search text-sm"></i></span>
       <input id="searchInput" oninput="filterData()" class="form-input pr-9" type="search" placeholder="ابحث برقم القيد، الاسم، القسم، أو عنوان المشروع..."/>
     </div>
-    <select id="filterType" class="form-input w-full sm:w-44" onchange="filterData()">
-      <option value="">جميع الأنواع</option>
-      <option value="بحث نظري">بحث نظري</option>
-      <option value="عمل فني">عمل فني</option>
-      <option value="نظري + عمل فني">نظري + عمل فني</option>
+    <select id="filterSupervisor" class="form-input w-full sm:w-52" onchange="filterData()">
+      <option value="">جميع المشرفين</option>
     </select>
     <select id="filterDept" class="form-input w-full sm:w-52" onchange="filterData()">
       <option value="">جميع الأقسام</option>
@@ -293,7 +284,6 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
   <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex-grow flex flex-col overflow-hidden min-h-96">
     <div class="flex-grow overflow-auto relative">
 
-      <!-- Loading Skeleton (FIX: جديد - حالة التحميل) -->
       <div id="loadingState" class="p-6 space-y-3">
         <div class="skeleton h-8 w-full rounded"></div>
         <div class="skeleton h-8 w-11/12 rounded"></div>
@@ -309,7 +299,7 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
             <th class="px-5 py-3.5 text-right">رقم القيد</th>
             <th class="px-5 py-3.5 text-right min-w-[170px]">اسم الطالب</th>
             <th class="px-5 py-3.5 text-right min-w-[260px]">عنوان المشروع</th>
-            <th class="px-5 py-3.5 text-right">النوع</th>
+            <th class="px-5 py-3.5 text-right min-w-[180px]">الأستاذ المشرف</th>
             <th class="px-5 py-3.5 text-right min-w-[180px]">القسم / البرنامج</th>
             <th class="px-5 py-3.5 text-center">سنة التخرج</th>
             <th class="px-5 py-3.5 text-center">التقييم</th>
@@ -333,17 +323,27 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
     </div>
 
     <!-- Footer bar -->
-    <div class="bg-gray-50 px-5 py-2.5 border-t border-gray-100 flex justify-between items-center text-xs text-gray-500">
-      <span>يُعرض: <strong id="filteredCount" class="text-blue-700 font-black">0</strong> من أصل <strong id="totalCount" class="font-black">0</strong> مشروع</span>
-      <span id="lastSyncTime" class="text-gray-400"></span>
+    <div class="bg-gray-50 px-5 py-2.5 border-t border-gray-100 flex justify-between items-center text-xs font-bold text-gray-500">
+      <div class="flex items-center gap-4">
+        <span>المعروض: <span id="filteredCount" class="text-primary">0</span></span>
+        <span>الإجمالي: <span id="totalCount" class="text-primary">0</span></span>
+      </div>
+      <div id="lastSyncTime">آخر مزامنة: --:--</div>
     </div>
   </div>
 </main>
 
-<footer class="bg-slate-900 text-slate-400 py-5 mt-auto">
-  <div class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-2 text-sm">
-    <p class="text-slate-200 font-bold">جامعة طرابلس — كلية الفنون والتصميم</p>
-    <p>إعداد: د. محمد اقميع &copy; 2026 | قسم البحوث والاستشارات |</p>
+<!-- ─── FOOTER ─── -->
+<footer class="bg-[#0a0f28] text-white py-4 border-t-4 border-yellow-400">
+  <div class="container mx-auto px-4">
+    <div class="flex flex-col md:flex-row justify-between items-center gap-4 text-sm font-bold">
+      <div class="flex items-center gap-2">
+        <span>جامعة طرابلس — كلية الفنون والتصميم</span>
+      </div>
+      <div class="flex items-center gap-2 text-gray-400">
+        <span>إعداد: د. محمد اقميع © 2026 | قسم البحوث والاستشارات |</span>
+      </div>
+    </div>
   </div>
 </footer>
 
@@ -373,7 +373,7 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
           <legend class="text-sm font-black text-gray-700 px-2 flex items-center gap-2">
             <i class="fas fa-user-graduate text-blue-500"></i> بيانات الطالب
           </legend>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
             <div>
               <label class="form-label">رقم القيد <span class="text-red-500">*</span></label>
               <input id="f_studentId" class="form-input" required type="text" placeholder="مثال: 0212345">
@@ -382,14 +382,6 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
             <div class="lg:col-span-2">
               <label class="form-label">اسم الطالب (رباعي) <span class="text-red-500">*</span></label>
               <input id="f_studentName" class="form-input" required type="text" placeholder="الاسم الكامل للطالب">
-            </div>
-            <div>
-              <label class="form-label">رقم الهاتف</label>
-              <input id="f_phone" class="form-input" type="tel" placeholder="09XXXXXXXX">
-            </div>
-            <div>
-              <label class="form-label">الرقم الوطني <span class="text-red-500">*</span></label>
-              <input id="f_nationalId" class="form-input" required pattern="\d{12}" title="12 رقماً" type="text" placeholder="12 رقم">
             </div>
             <div>
               <label class="form-label">سنة الالتحاق</label>
@@ -443,15 +435,6 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
               <textarea id="f_projectTitle" class="form-input resize-none" required rows="2" placeholder="العنوان الكامل للمشروع..."></textarea>
             </div>
             <div>
-              <label class="form-label">نوع المشروع <span class="text-red-500">*</span></label>
-              <select id="f_projectType" class="form-input" required>
-                <option value="" disabled selected>اختر النوع</option>
-                <option>بحث نظري</option>
-                <option>عمل فني</option>
-                <option>نظري + عمل فني</option>
-              </select>
-            </div>
-            <div>
               <label class="form-label">الأستاذ المشرف <span class="text-red-500">*</span></label>
               <input id="f_supervisor" class="form-input" required type="text" placeholder="اسم الأستاذ المشرف">
             </div>
@@ -459,9 +442,11 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
               <label class="form-label">الدرجة (0 – 100)</label>
               <input id="f_score" class="form-input" type="number" min="0" max="100" step="0.5" placeholder="مثال: 87">
             </div>
-            <div>
-              <label class="form-label">رابط ملف PDF (اختياري)</label>
-              <input id="f_pdfUrl" class="form-input" type="url" placeholder="https://drive.google.com/...">
+            <div class="sm:col-span-2">
+              <label class="form-label">رفع ملف المشروع (PDF)</label>
+              <input id="f_pdfFile" class="form-input" type="file" accept=".pdf">
+              <input id="f_pdfUrl" type="hidden">
+              <p id="pdfStatus" class="text-xs text-gray-500 mt-1"></p>
             </div>
           </div>
         </fieldset>
@@ -498,7 +483,7 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
         <i class="fas fa-times"></i>
       </button>
     </div>
-    <div id="viewContent" class="overflow-y-auto flex-grow p-6 bg-slate-50"></div>
+    <div id="viewContent" class="overflow-y-auto flex-grow p-6 bg-slate-50/50"></div>
     <div id="viewFooter" class="px-6 py-4 border-t bg-white flex justify-between items-center shrink-0 gap-3"></div>
   </div>
 </div>
@@ -557,9 +542,6 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
 <script>
 'use strict';
 
-// ─────────────────────────────────────────────
-// STATE
-// ─────────────────────────────────────────────
 const STORAGE_KEY = 'fad_archive_v3';
 const GAS_URL_KEY = 'fad_gas_url_v3';
 
@@ -567,11 +549,9 @@ let projects = [];
 let currentEditId = null;
 const GAS_HARDCODED = 'https://script.google.com/macros/s/AKfycbydPqqiAaYhNpWu3NijFueGMpeUHo6XhD_jlZkD2tGq-fmJfLnVJKMCZECL8GjAzEq7hQ/exec';
 
-// تحديث الرابط المحفوظ دائماً بأحدث رابط مضمّن في الكود
 localStorage.setItem(GAS_URL_KEY, GAS_HARDCODED);
 let gasUrl = GAS_HARDCODED;
 
-// الهيكل الأكاديمي
 const ACADEMIC = {
   'قسم الفنون الجميلة والتطبيقية': [
     'برنامج التربية الفنية','برنامج الرسم والتصوير',
@@ -593,13 +573,9 @@ const ACADEMIC = {
   'قسم التصميم الداخلي': ['برنامج التصميم الداخلي']
 };
 
-// ─────────────────────────────────────────────
-// INIT
-// ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   projects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  migrateLegacyData();
-
+  
   if (gasUrl) {
     setConnectionStatus('syncing', 'جاري الاتصال...');
     await syncWithGAS(true);
@@ -614,87 +590,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateFilterOptions();
 });
 
-// ─── ترحيل البيانات القديمة (FIX: تحسين migrate) ───
-function migrateLegacyData() {
-  const oldKeys = ['art_archive_data', 'art_archive_data_v2'];
-  oldKeys.forEach(key => {
-    const old = localStorage.getItem(key);
-    if (old && projects.length === 0) {
-      try {
-        const parsed = JSON.parse(old);
-        projects = parsed.map(p => ({
-          id: p.id || ('PRJ_' + Date.now() + Math.random()),
-          studentId: p.studentId || '',
-          studentName: p.studentName || '',
-          nationalId: p.nationalId || '',
-          phone: p.phone || '',
-          department: p.department || '',
-          program: p.program || '',
-          specialization: p.specialization || '',
-          enrollmentYear: p.enrollmentYear || '',
-          graduationYear: p.graduationYear || '',
-          projectTitle: p.projectTitle || '',
-          projectType: p.projectType || '',
-          supervisor: p.supervisor || '',
-          score: p.score || '',
-          grade: computeGrade(p.score),
-          pdfUrl: p.pdfUrl || p.fileName || '',
-          createdAt: p.createdAt || new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }));
-        saveLocal();
-      } catch (_) {}
-    }
-  });
-}
-
-// ─────────────────────────────────────────────
-// GOOGLE APPS SCRIPT INTEGRATION
-// ─────────────────────────────────────────────
-
-// GET: fetch أولاً، وإن فشل نجرب JSONP احتياطياً
 async function gasGet(params) {
   const query  = new URLSearchParams(params).toString();
   const url    = `${gasUrl}?${query}`;
-
-  // المحاولة الأولى: fetch عادي (يعمل عند فتح الملف من سيرفر أو مباشرة)
   try {
     const res = await fetch(url, { redirect: 'follow' });
     const text = await res.text();
     return JSON.parse(text);
   } catch (_) {
-    // المحاولة الثانية: JSONP احتياطي (يعمل من file:// في بعض المتصفحات)
     return gasGetJSONP(params);
   }
 }
 
-// JSONP احتياطي
 function gasGetJSONP(params) {
   return new Promise((resolve, reject) => {
     const cbName = '_cb_' + Date.now();
     let script;
-
     const timer = setTimeout(() => {
       cleanup();
       reject(new Error('انتهت مهلة الاتصال'));
     }, 20000);
-
     function cleanup() {
       clearTimeout(timer);
       delete window[cbName];
       if (script && script.parentNode) script.parentNode.removeChild(script);
     }
-
     window[cbName] = (data) => { cleanup(); resolve(data); };
-
     script = document.createElement('script');
     script.src = `${gasUrl}?${new URLSearchParams({ ...params, callback: cbName })}`;
-    script.onerror = () => { cleanup(); reject(new Error('تعذّر الاتصال — افتح الملف من خادم ويب')); };
+    script.onerror = () => { cleanup(); reject(new Error('تعذّر الاتصال')); };
     document.head.appendChild(script);
   });
 }
 
-// POST: للكتابة (add / update / delete)
 async function gasPost(action, payload) {
   if (!gasUrl) return null;
   try {
@@ -707,46 +635,30 @@ async function gasPost(action, payload) {
     const text = await res.text();
     return JSON.parse(text);
   } catch (err) {
-    console.warn('GAS POST:', err.message);
     return null;
   }
 }
 
 async function syncWithGAS(silent = false) {
-  if (!gasUrl) {
-    if (!silent) showGASConfig();
-    return;
-  }
-
+  if (!gasUrl) return;
   const icon = document.getElementById('syncIcon');
   icon.classList.add('spinner');
   setConnectionStatus('syncing', 'جاري المزامنة...');
-
   try {
     const json = await gasGet({ action: 'getAll' });
-
     if (json.status === 'ok') {
-      const cloudProjects = json.data || [];
-      const cloudIds = new Set(cloudProjects.map(p => p.id));
-      const localOnly = projects.filter(p => !cloudIds.has(p.id));
-
-      projects = [...cloudProjects, ...localOnly];
+      projects = json.data || [];
       saveLocal();
       renderTable(projects);
       updateStats();
       updateFilterOptions();
-
       setConnectionStatus('online', 'متصل بـ Google Sheets');
       document.getElementById('gasBanner').classList.add('hidden');
-      document.getElementById('lastSyncTime').textContent =
-        'آخر مزامنة: ' + new Date().toLocaleTimeString('ar-LY');
-      if (!silent) showToast('تمت المزامنة مع Google Sheets بنجاح', 'success');
-    } else {
-      throw new Error(json.message || 'خطأ من الخادم');
+      document.getElementById('lastSyncTime').textContent = 'آخر مزامنة: ' + new Date().toLocaleTimeString('ar-LY');
+      if (!silent) showToast('تمت المزامنة بنجاح', 'success');
     }
   } catch (err) {
     setConnectionStatus('error', 'خطأ في الاتصال');
-    if (!silent) showToast('فشل الاتصال: ' + err.message, 'error');
   } finally {
     icon.classList.remove('spinner');
     showTable();
@@ -766,29 +678,21 @@ function showGASConfig() {
 
 async function saveGASConfig() {
   const url = document.getElementById('gasUrlInput').value.trim();
-  if (!url) { showToast('أدخل رابط النشر أولاً', 'error'); return; }
-
-  gasUrl = url;                                        // تحديث المتغير العام
-  localStorage.setItem(GAS_URL_KEY, url);              // حفظه دائم
+  if (!url) return;
+  gasUrl = url;
+  localStorage.setItem(GAS_URL_KEY, url);
   closeModal('gasModal');
-  showToast('تم حفظ الرابط، جاري الاتصال...', 'info');
   await syncWithGAS();
 }
 
-// ─────────────────────────────────────────────
-// CRUD — SAVE PROJECT
-// ─────────────────────────────────────────────
 async function saveProject() {
-  // تحقق من الحقول المطلوبة
   const required = {
     f_studentId: 'رقم القيد',
     f_studentName: 'اسم الطالب',
-    f_nationalId: 'الرقم الوطني',
     f_department: 'القسم',
     f_program: 'البرنامج',
     f_graduationYear: 'سنة التخرج',
     f_projectTitle: 'عنوان المشروع',
-    f_projectType: 'نوع المشروع',
     f_supervisor: 'الأستاذ المشرف'
   };
 
@@ -801,19 +705,10 @@ async function saveProject() {
     }
   }
 
-  // التحقق من الرقم الوطني
-  const natId = document.getElementById('f_nationalId').value.trim();
-  if (!/^\d{12}$/.test(natId)) {
-    showFormError('الرقم الوطني يجب أن يتكون من 12 رقماً');
-    document.getElementById('f_nationalId').focus();
-    return;
-  }
-
-  // التحقق من عدم تكرار رقم القيد (FIX: جديد)
   const studentId = document.getElementById('f_studentId').value.trim();
   const duplicate = projects.find(p => p.studentId === studentId && p.id !== currentEditId);
   if (duplicate) {
-    showFormError(`رقم القيد ${studentId} مسجل مسبقاً للطالب: ${duplicate.studentName}`);
+    showFormError(`رقم القيد ${studentId} مسجل مسبقاً`);
     return;
   }
 
@@ -825,15 +720,12 @@ async function saveProject() {
     id: currentEditId || ('PRJ_' + Date.now()),
     studentId,
     studentName: document.getElementById('f_studentName').value.trim(),
-    nationalId: natId,
-    phone: document.getElementById('f_phone').value.trim(),
     department: document.getElementById('f_department').value,
     program: document.getElementById('f_program').value,
     specialization: document.getElementById('f_specialization').value.trim(),
     enrollmentYear: document.getElementById('f_enrollmentYear').value,
     graduationYear: document.getElementById('f_graduationYear').value,
     projectTitle: document.getElementById('f_projectTitle').value.trim(),
-    projectType: document.getElementById('f_projectType').value,
     supervisor: document.getElementById('f_supervisor').value.trim(),
     score,
     grade: computeGrade(score),
@@ -841,7 +733,6 @@ async function saveProject() {
     updatedAt: new Date().toISOString()
   };
 
-  // حفظ محلياً أولاً
   if (currentEditId) {
     const idx = projects.findIndex(p => p.id === currentEditId);
     project.createdAt = projects[idx]?.createdAt || new Date().toISOString();
@@ -850,89 +741,177 @@ async function saveProject() {
     project.createdAt = new Date().toISOString();
     projects.unshift(project);
   }
+
   saveLocal();
-
-  // مزامنة مع GAS
-  if (gasUrl) {
-    const action = currentEditId ? 'update' : 'add';
-    const result = await gasPost(action, { project });
-    if (result && result.status === 'ok') {
-      setConnectionStatus('online', 'متصل بـ Google Sheets');
-    } else if (result && result.status === 'error') {
-      showToast('تحذير: ' + result.message, 'warning');
-    }
-  }
-
   renderTable(projects);
   updateStats();
-  updateFilterOptions();
-  closeModal('addModal');
+  
+  if (gasUrl) {
+    await gasPost(currentEditId ? 'update' : 'add', { project });
+  }
+
   setSaveLoading(false);
-  showToast(currentEditId ? 'تم تحديث بيانات المشروع بنجاح' : 'تمت أرشفة المشروع الجديد بنجاح', 'success');
+  closeModal('addModal');
+  showToast(currentEditId ? 'تم التحديث بنجاح' : 'تمت الإضافة بنجاح', 'success');
 }
 
-// ─────────────────────────────────────────────
-// CRUD — DELETE PROJECT
-// ─────────────────────────────────────────────
-async function deleteProject(id) {
-  const p = projects.find(x => x.id === id);
-  if (!p) return;
-  if (!confirm(`⚠️ هل أنت متأكد من حذف مشروع الطالب:\n"${p.studentName}" - "${p.projectTitle}"؟\n\nلا يمكن التراجع عن هذا الإجراء.`)) return;
+function computeGrade(score) {
+  if (!score && score !== 0) return '';
+  const s = parseFloat(score);
+  if (s >= 85) return 'ممتاز';
+  if (s >= 75) return 'جيد جداً';
+  if (s >= 65) return 'جيد';
+  if (s >= 50) return 'مقبول';
+  return 'ضعيف';
+}
 
-  projects = projects.filter(x => x.id !== id);
-  saveLocal();
+function saveLocal() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+}
 
-  if (gasUrl) {
-    await gasPost('delete', { id });
+function renderTable(data) {
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+  const table = document.getElementById('mainTable');
+
+  tbody.innerHTML = '';
+  document.getElementById('filteredCount').textContent = data.length;
+  document.getElementById('totalCount').textContent = projects.length;
+
+  if (data.length === 0) {
+    empty.classList.remove('hidden');
+    table.classList.add('hidden');
+    return;
   }
 
-  renderTable(projects);
-  updateStats();
-  updateFilterOptions();
-  showToast('تم حذف المشروع بنجاح', 'success');
+  empty.classList.add('hidden');
+  table.classList.remove('hidden');
+
+  data.forEach((p, i) => {
+    const tr = document.createElement('tr');
+    tr.className = 'animate-row';
+    tr.style.animationDelay = `${Math.min(i * 30, 400)}ms`;
+    tr.innerHTML = `
+      <td class="px-5 py-3.5 text-gray-400 font-bold text-xs">${i + 1}</td>
+      <td class="px-5 py-3.5 font-black text-gray-800 whitespace-nowrap">${p.studentId}</td>
+      <td class="px-5 py-3.5 font-bold text-primary whitespace-nowrap">${p.studentName}</td>
+      <td class="px-5 py-3.5 text-gray-700 max-w-xs">
+        <div class="truncate font-medium" title="${p.projectTitle}">${p.projectTitle}</div>
+      </td>
+      <td class="px-5 py-3.5 font-bold text-gray-800 whitespace-nowrap">${p.supervisor}</td>
+      <td class="px-5 py-3.5">
+        <div class="font-bold text-gray-800 text-sm whitespace-nowrap">${p.department}</div>
+        <div class="text-xs text-gray-400 mt-0.5">${p.program || ''}</div>
+      </td>
+      <td class="px-5 py-3.5 text-center font-black text-gray-800">${p.graduationYear}</td>
+      <td class="px-5 py-3.5 text-center">${getGradeBadge(p.score)}</td>
+      <td class="px-5 py-3.5 text-center whitespace-nowrap">
+        <div class="flex items-center justify-center gap-1.5">
+          <button onclick="viewProject('${p.id}')" class="w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white border border-blue-100 flex items-center justify-center transition" title="عرض">
+            <i class="fas fa-eye text-xs"></i>
+          </button>
+          <button onclick="editProject('${p.id}')" class="w-8 h-8 rounded-lg bg-amber-50 hover:bg-amber-500 text-amber-600 hover:text-white border border-amber-100 flex items-center justify-center transition" title="تعديل">
+            <i class="fas fa-edit text-xs"></i>
+          </button>
+          <button onclick="deleteProject('${p.id}')" class="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-500 text-red-600 hover:text-white border border-red-100 flex items-center justify-center transition" title="حذف">
+            <i class="fas fa-trash text-xs"></i>
+          </button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
 }
 
-// ─────────────────────────────────────────────
-// CRUD — EDIT PROJECT
-// ─────────────────────────────────────────────
-function editProject(id) {
-  const p = projects.find(x => x.id === id);
-  if (!p) return;
-
-  currentEditId = id;
-
-  // FIX: تحديث عنوان المودال
-  document.getElementById('modalTitle').innerHTML = `
-    <span class="bg-amber-100 text-amber-600 w-8 h-8 rounded-lg flex items-center justify-center shrink-0"><i class="fas fa-edit text-sm"></i></span>
-    تعديل بيانات المشروع
-  `;
-
-  // ملء الحقول
-  document.getElementById('f_studentId').value = p.studentId;
-  document.getElementById('f_studentName').value = p.studentName;
-  document.getElementById('f_nationalId').value = p.nationalId;
-  document.getElementById('f_phone').value = p.phone || '';
-  document.getElementById('f_enrollmentYear').value = p.enrollmentYear || '';
-  document.getElementById('f_specialization').value = p.specialization || '';
-  document.getElementById('f_graduationYear').value = p.graduationYear;
-  document.getElementById('f_projectTitle').value = p.projectTitle;
-  document.getElementById('f_projectType').value = p.projectType;
-  document.getElementById('f_supervisor').value = p.supervisor;
-  document.getElementById('f_score').value = p.score || '';
-  document.getElementById('f_pdfUrl').value = p.pdfUrl || '';
-
-  // FIX: تعيين القسم أولاً ثم تحديث البرامج ثم تعيين البرنامج
-  const deptEl = document.getElementById('f_department');
-  deptEl.value = p.department;
-  updatePrograms(p.program);
-
-  hideFormError();
-  openModal('addModal');
+function getGradeBadge(score) {
+  if (!score && score !== 0) return '<span class="text-gray-300">—</span>';
+  const s = parseFloat(score);
+  let colors = 'bg-gray-100 text-gray-600';
+  if (s >= 85) colors = 'bg-green-100 text-green-700';
+  else if (s >= 75) colors = 'bg-blue-100 text-blue-700';
+  else if (s >= 50) colors = 'bg-yellow-100 text-yellow-700';
+  else colors = 'bg-red-100 text-red-700';
+  return `<span class="badge ${colors}">${s}%</span>`;
 }
 
-// ─────────────────────────────────────────────
-// VIEW PROJECT DETAILS
-// ─────────────────────────────────────────────
+function filterData() {
+  const term = document.getElementById('searchInput').value.toLowerCase().trim();
+  const supervisor = document.getElementById('filterSupervisor').value;
+  const dept = document.getElementById('filterDept').value;
+  const year = document.getElementById('filterYear').value;
+
+  const filtered = projects.filter(p => {
+    const matchSearch = !term ||
+      p.studentName.toLowerCase().includes(term) ||
+      p.studentId.includes(term) ||
+      p.projectTitle.toLowerCase().includes(term) ||
+      p.supervisor.toLowerCase().includes(term) ||
+      p.department.includes(term);
+
+    const matchSupervisor = !supervisor || p.supervisor === supervisor;
+    const matchDept = !dept || p.department === dept;
+    const matchYear = !year || String(p.graduationYear) === year;
+
+    return matchSearch && matchSupervisor && matchDept && matchYear;
+  });
+
+  renderTable(filtered);
+}
+
+function updateStats() {
+  document.getElementById('statTotal').textContent = projects.length;
+  document.getElementById('statExcellent').textContent = projects.filter(p => parseFloat(p.score) >= 85).length;
+  document.getElementById('statSupervisors').textContent = [...new Set(projects.map(p => p.supervisor))].length;
+}
+
+function updateFilterOptions() {
+  const supervisors = [...new Set(projects.map(p => p.supervisor))].sort();
+  const depts = [...new Set(projects.map(p => p.department))].sort();
+  const years = [...new Set(projects.map(p => p.graduationYear))].sort((a,b) => b-a);
+
+  const sSelect = document.getElementById('filterSupervisor');
+  const dSelect = document.getElementById('filterDept');
+  const ySelect = document.getElementById('filterYear');
+
+  const sVal = sSelect.value;
+  const dVal = dSelect.value;
+  const yVal = ySelect.value;
+
+  sSelect.innerHTML = '<option value="">جميع المشرفين</option>' + supervisors.map(s => `<option ${s===sVal?'selected':''}>${s}</option>`).join('');
+  dSelect.innerHTML = '<option value="">جميع الأقسام</option>' + depts.map(d => `<option ${d===dVal?'selected':''}>${d}</option>`).join('');
+  ySelect.innerHTML = '<option value="">كل السنوات</option>' + years.map(y => `<option ${String(y)===yVal?'selected':''}>${y}</option>`).join('');
+}
+
+function openModal(id) {
+  const modal = document.getElementById(id);
+  modal.classList.add('open');
+  if (id === 'addModal' && !currentEditId) {
+    document.getElementById('projectForm').reset();
+    document.getElementById('modalTitle').innerHTML = '<span class="bg-blue-100 text-blue-700 w-8 h-8 rounded-lg flex items-center justify-center"><i class="fas fa-plus text-sm"></i></span> إضافة مشروع جديد';
+    document.getElementById('saveBtnText').textContent = 'حفظ البيانات';
+    document.getElementById('pdfStatus').textContent = '';
+  }
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  if (id === 'addModal') {
+    currentEditId = null;
+    hideFormError();
+  }
+}
+
+function handleOverlayClick(e, id) {
+  if (e.target.id === id) closeModal(id);
+}
+
+function updatePrograms() {
+  const dept = document.getElementById('f_department').value;
+  const progSelect = document.getElementById('f_program');
+  const programs = ACADEMIC[dept] || [];
+  progSelect.innerHTML = '<option value="" disabled selected>اختر البرنامج</option>' + programs.map(p => `<option>${p}</option>`).join('');
+}
+
 function viewProject(id) {
   const p = projects.find(x => x.id === id);
   if (!p) return;
@@ -948,7 +927,6 @@ function viewProject(id) {
       <div class="bg-white rounded-2xl border-r-4 border-primary p-5 shadow-sm">
         <h4 class="text-xl font-black text-gray-800 leading-snug">${p.projectTitle}</h4>
         <div class="flex flex-wrap gap-2 mt-3">
-          ${getTypeBadge(p.projectType)}
           <span class="badge bg-slate-100 text-slate-600 border-slate-200">
             <i class="fas fa-calendar-alt"></i> دفعة ${p.graduationYear}
           </span>
@@ -963,8 +941,6 @@ function viewProject(id) {
           <p class="text-lg font-black text-gray-900 mb-2">${p.studentName}</p>
           <div class="space-y-1.5 text-sm">
             <div class="flex justify-between"><span class="text-gray-400">رقم القيد</span><span class="font-bold">${p.studentId}</span></div>
-            <div class="flex justify-between"><span class="text-gray-400">الرقم الوطني</span><span class="font-bold">${p.nationalId}</span></div>
-            ${p.phone ? `<div class="flex justify-between"><span class="text-gray-400">الهاتف</span><span class="font-bold">${p.phone}</span></div>` : ''}
             ${p.enrollmentYear ? `<div class="flex justify-between"><span class="text-gray-400">سنة الالتحاق</span><span class="font-bold">${p.enrollmentYear}</span></div>` : ''}
           </div>
         </div>
@@ -1004,378 +980,226 @@ function viewProject(id) {
   openModal('viewModal');
 }
 
-// ─────────────────────────────────────────────
-// PRINT PROJECT CARD
-// ─────────────────────────────────────────────
-function printProject(id) {
+function editProject(id) {
   const p = projects.find(x => x.id === id);
   if (!p) return;
 
-  const today = new Date().toLocaleDateString('ar-LY', { year: 'numeric', month: 'long', day: 'numeric' });
+  currentEditId = id;
+  document.getElementById('modalTitle').innerHTML = '<span class="bg-amber-100 text-amber-700 w-8 h-8 rounded-lg flex items-center justify-center"><i class="fas fa-edit text-sm"></i></span> تعديل بيانات المشروع';
+  document.getElementById('saveBtnText').textContent = 'تحديث البيانات';
 
-  document.getElementById('printArea').innerHTML = `
-    <div style="direction:rtl;font-family:'Cairo',sans-serif;color:#000;max-width:800px;margin:0 auto;padding:20px">
-      <div style="text-align:center;border-bottom:3px solid #1e3a8a;padding-bottom:20px;margin-bottom:30px">
-        <div style="margin-bottom:15px">
-          <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663672341033/DPcqnCesIGqshKoH.webp" alt="شعار الكلية" style="width:100px;height:100px;margin:0 auto;object-fit:contain">
+  document.getElementById('f_studentId').value = p.studentId;
+  document.getElementById('f_studentName').value = p.studentName;
+  document.getElementById('f_department').value = p.department;
+  updatePrograms();
+  document.getElementById('f_program').value = p.program;
+  document.getElementById('f_specialization').value = p.specialization || '';
+  document.getElementById('f_enrollmentYear').value = p.enrollmentYear || '';
+  document.getElementById('f_graduationYear').value = p.graduationYear;
+  document.getElementById('f_projectTitle').value = p.projectTitle;
+  document.getElementById('f_supervisor').value = p.supervisor;
+  document.getElementById('f_score').value = p.score || '';
+  document.getElementById('f_pdfUrl').value = p.pdfUrl || '';
+  document.getElementById('pdfStatus').textContent = p.pdfUrl ? 'يوجد ملف مرفق مسبقاً' : '';
+
+  openModal('addModal');
+}
+
+async function deleteProject(id) {
+  if (!confirm('هل أنت متأكد من حذف هذا المشروع نهائياً؟')) return;
+  projects = projects.filter(p => p.id !== id);
+  saveLocal();
+  renderTable(projects);
+  updateStats();
+  if (gasUrl) await gasPost('delete', { id });
+  showToast('تم الحذف بنجاح', 'success');
+}
+
+async function printProject(id) {
+  try {
+    const p = projects.find(x => x.id === id);
+    if (!p) { console.error('لم يتم العثور على المشروع'); return; }
+
+    const today = new Date().toLocaleDateString('ar-LY', { year: 'numeric', month: 'long', day: 'numeric' });
+    const gradeText = p.score
+      ? p.score + '% — ' + (p.grade || computeGrade(p.score))
+      : 'لم يقيم بعد';
+
+    // ── توليد QR Code كـ Data URL مدمج (لا يعتمد على اتصال خارجي) ──
+    let qrHtml = '';
+    try {
+      const qrContent = `اسم الطالب: ${p.studentName}\nرقم القيد: ${p.studentId}`;
+      const qrDataUrl = await QRCode.toDataURL(qrContent, {
+        width: 100,
+        margin: 1,
+        color: { dark: '#1e3a8a', light: '#ffffff' }
+      });
+      qrHtml = `<img src="${qrDataUrl}" alt="QR Code" style="width:100%;height:100%;display:block;border-radius:2px">`;
+    } catch (qrErr) {
+      console.warn('تعذّر توليد QR Code محلياً:', qrErr);
+      // خط رجعة: API خارجي
+      const qrFallback = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(p.studentName + '\n' + p.studentId)}`;
+      qrHtml = `<img src="${qrFallback}" alt="QR Code" style="width:100%;height:100%;display:block" crossorigin="anonymous">`;
+    }
+
+    const printContent = `
+      <div style="direction:rtl;font-family:'Cairo',sans-serif;color:#000;max-width:800px;margin:0 auto;padding:18px;position:relative">
+
+        <!-- ── رمز QR في الزاوية العلوية اليسرى ── -->
+        <div style="position:absolute;top:18px;left:18px;width:95px;height:95px;
+                    border:2px solid #1e3a8a;padding:3px;border-radius:5px;background:#fff;
+                    box-shadow:0 1px 4px rgba(0,0,0,.12)">
+          ${qrHtml}
         </div>
-        <h1 style="font-size:26px;font-weight:900;margin:0;color:#1e3a8a">جامعة طرابلس</h1>
-        <h2 style="font-size:20px;font-weight:700;margin:6px 0 0;color:#333">كلية الفنون والتصميم</h2>
-        <p style="font-size:14px;margin:8px 0 0;text-decoration:underline;font-weight:bold;color:#555">بطاقة بيانات مشروع تخرج</p>
-      </div>
-      <div style="text-align:center;margin-bottom:30px;background:#f8f9ff;padding:15px;border-radius:8px;border:1px solid #dde3ff">
-        <p style="font-size:12px;color:#888;margin:0 0 6px">عنوان المشروع</p>
-        <h2 style="font-size:20px;font-weight:900;margin:0;color:#1e3a8a">${p.projectTitle}</h2>
-      </div>
-      <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:40px">
-        <tbody>
-          ${[
-            ['اسم الطالب', p.studentName, true],
-            ['رقم القيد', p.studentId, false],
-            ['الرقم الوطني', p.nationalId, false],
-            ['القسم العلمي', p.department, false],
-            ['البرنامج التخصصي', p.program, false],
-            ['التخصص الدقيق', p.specialization || '—', false],
-            ['سنة الالتحاق', p.enrollmentYear || '—', false],
-            ['سنة التخرج', p.graduationYear, false],
-            ['نوع المشروع', p.projectType, false],
-            ['الأستاذ المشرف', p.supervisor, false],
-            ['التقييم النهائي', p.score ? p.score + '% — ' + p.grade : 'لم يقيم بعد', true],
-          ].map(([label, value, bold]) => `
-            <tr>
-              <td style="border:1px solid #ccc;padding:10px 14px;width:30%;background:#f0f4ff;font-weight:bold;font-size:13px">${label}</td>
-              <td style="border:1px solid #ccc;padding:10px 14px;${bold ? 'font-weight:bold;font-size:16px' : ''}">${value}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-      <div style="display: flex; justify-content: space-between; margin-top: 60px; padding: 0 20px;">
-          <div style="text-align: center; width: 23%;">
-              <p style="font-weight: bold; margin-bottom: 40px; font-size: 14px;">مسؤول مكتبة الكلية</p>
-              <p style="font-size: 12px; color: #666;">الإسم وختم المكتبة</p>
-              <p>..................................</p>
+
+        <!-- ── الرأس المركزي ── -->
+        <div style="text-align:center;border-bottom:2.5px solid #1e3a8a;padding-bottom:10px;margin-bottom:14px">
+          <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663672341033/DPcqnCesIGqshKoH.webp"
+               alt="شعار الكلية" style="width:100px;height:100px;object-fit:contain;margin-bottom:4px">
+          <h1 style="font-size:20px;font-weight:900;margin:4px 0 0;color:#1e3a8a">جامعة طرابلس</h1>
+          <h2 style="font-size:14px;font-weight:700;margin:2px 0 0;color:#333">كلية الفنون والتصميم</h2>
+          <p style="font-size:11px;font-weight:bold;color:#555;margin:5px 0 0;
+                    text-decoration:underline;letter-spacing:.02em">بطاقة بيانات مشروع تخرج</p>
+        </div>
+
+        <!-- ── عنوان المشروع ── -->
+        <div style="text-align:center;margin-bottom:14px;background:#f4f6ff;
+                    padding:10px 14px;border-radius:7px;border:1px solid #dde3ff">
+          <p style="font-size:10px;color:#777;margin:0 0 5px;font-weight:bold;text-transform:uppercase;letter-spacing:.05em">عنوان مشروع التخرج</p>
+          <h2 style="font-size:15px;font-weight:900;margin:0;color:#1e3a8a;line-height:1.45">${p.projectTitle}</h2>
+        </div>
+
+        <!-- ── جدول البيانات ── -->
+        <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px">
+          <tbody>
+            ${[
+              ['اسم الطالب',        p.studentName,               true ],
+              ['رقم القيد',         p.studentId,                  false],
+              ['القسم العلمي',      p.department,                 false],
+              ['البرنامج التخصصي',  p.program,                    false],
+              ['التخصص الدقيق',    p.specialization  || '—',      false],
+              ['سنة الالتحاق',     p.enrollmentYear  || '—',      false],
+              ['سنة التخرج',       String(p.graduationYear),      false],
+              ['الأستاذ المشرف',   p.supervisor,                  false],
+              ['التقييم النهائي',  gradeText,                     true ],
+            ].map(([lbl, val, bold]) => `
+              <tr>
+                <td style="border:1px solid #ccc;padding:7px 10px;width:33%;
+                           background:#eef2ff;font-weight:bold;font-size:11px;color:#1e3a8a">${lbl}</td>
+                <td style="border:1px solid #ccc;padding:7px 10px;
+                           ${bold ? 'font-weight:900;font-size:13px;color:#111' : 'font-size:11px;color:#333'}">${val}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+
+        <!-- ── الاعتمادات ── -->
+        <div style="border-top:1px dashed #bbb;padding-top:14px;
+                    display:flex;justify-content:flex-end;align-items:flex-end">
+          <div style="text-align:center;width:44%">
+            <p style="font-size:11px;font-weight:bold;margin:0 0 6px;color:#1e3a8a">مسؤول مكتبة الكلية</p>
+            <p style="letter-spacing:4px;color:#bbb;font-size:13px;margin:0 0 4px;line-height:1">
+              . . . . . . . . . . . . . . . .
+            </p>
+            <p style="font-size:9px;color:#666;margin:4px 0 0">التاريخ: ___________</p>
           </div>
-      </div>
-      <div style="margin-top:60px;text-align:center;font-size:11px;color:#888;border-top:1px solid #ddd;padding-top:12px">
-        <p>طُبعت هذه البطاقة من منظومة أرشفة مشاريع التخرج — كلية الفنون والتصميم | تاريخ الطباعة: ${today}</p>
-      </div>
-    </div>
-  `;
-  window.print();
-}
-
-// ─────────────────────────────────────────────
-// RENDER TABLE
-// ─────────────────────────────────────────────
-function renderTable(data) {
-  const tbody = document.getElementById('tableBody');
-  const empty = document.getElementById('emptyState');
-  const table = document.getElementById('mainTable');
-
-  tbody.innerHTML = '';
-  document.getElementById('filteredCount').textContent = data.length;
-  document.getElementById('totalCount').textContent = projects.length;
-
-  if (data.length === 0) {
-    empty.classList.remove('hidden');
-    table.classList.add('hidden');
-    return;
-  }
-
-  empty.classList.add('hidden');
-  table.classList.remove('hidden');
-
-  data.forEach((p, i) => {
-    const tr = document.createElement('tr');
-    tr.className = 'animate-row';
-    tr.style.animationDelay = `${Math.min(i * 30, 400)}ms`; // FIX: حد أقصى للتأخير
-    tr.innerHTML = `
-      <td class="px-5 py-3.5 text-gray-400 font-bold text-xs">${i + 1}</td>
-      <td class="px-5 py-3.5 font-black text-gray-800 whitespace-nowrap">${p.studentId}</td>
-      <td class="px-5 py-3.5 font-bold text-primary whitespace-nowrap">${p.studentName}</td>
-      <td class="px-5 py-3.5 text-gray-700 max-w-xs">
-        <div class="truncate font-medium" title="${p.projectTitle}">${p.projectTitle}</div>
-      </td>
-      <td class="px-5 py-3.5 whitespace-nowrap">${getTypeBadge(p.projectType)}</td>
-      <td class="px-5 py-3.5">
-        <div class="font-bold text-gray-800 text-sm whitespace-nowrap">${p.department}</div>
-        <div class="text-xs text-gray-400 mt-0.5">${p.program || ''}</div>
-      </td>
-      <td class="px-5 py-3.5 text-center font-black text-gray-800">${p.graduationYear}</td>
-      <td class="px-5 py-3.5 text-center">${getGradeBadge(p.score)}</td>
-      <td class="px-5 py-3.5 text-center whitespace-nowrap">
-        <div class="flex items-center justify-center gap-1.5">
-          <button onclick="viewProject('${p.id}')" class="w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white border border-blue-100 flex items-center justify-center transition" title="عرض">
-            <i class="fas fa-eye text-xs"></i>
-          </button>
-          <button onclick="editProject('${p.id}')" class="w-8 h-8 rounded-lg bg-amber-50 hover:bg-amber-500 text-amber-600 hover:text-white border border-amber-100 flex items-center justify-center transition" title="تعديل">
-            <i class="fas fa-edit text-xs"></i>
-          </button>
-          <button onclick="deleteProject('${p.id}')" class="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-500 text-red-600 hover:text-white border border-red-100 flex items-center justify-center transition" title="حذف">
-            <i class="fas fa-trash text-xs"></i>
-          </button>
         </div>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
+
+        <!-- ── ذيل الطباعة ── -->
+        <div style="margin-top:14px;text-align:center;font-size:9px;color:#999;
+                    border-top:1px solid #ddd;padding-top:8px">
+          طُبعت هذه البطاقة من منظومة أرشفة مشاريع التخرج — كلية الفنون والتصميم | تاريخ الطباعة: ${today}
+        </div>
+      </div>`;
+
+    document.getElementById('printArea').innerHTML = printContent;
+
+    // ── انتظار تحميل كل الصور قبل الطباعة ──
+    const imgs = [...document.getElementById('printArea').querySelectorAll('img')];
+    await Promise.all(imgs.map(img =>
+      img.complete
+        ? Promise.resolve()
+        : new Promise(res => { img.onload = res; img.onerror = res; })
+    ));
+
+    window.print();
+
+  } catch (err) {
+    console.error('خطأ في وظيفة الطباعة:', err);
+    alert('حدث خطأ في طباعة البطاقة. يرجى المحاولة مرة أخرى.');
+  }
 }
 
-// ─────────────────────────────────────────────
-// FILTERS
-// ─────────────────────────────────────────────
-function filterData() {
-  const term = document.getElementById('searchInput').value.toLowerCase().trim();
-  const type = document.getElementById('filterType').value;
-  const dept = document.getElementById('filterDept').value;
-  const year = document.getElementById('filterYear').value;
-
-  const filtered = projects.filter(p => {
-    const matchSearch = !term ||
-      p.studentName.toLowerCase().includes(term) ||
-      p.studentId.includes(term) ||
-      p.projectTitle.toLowerCase().includes(term) ||
-      p.department.includes(term) ||
-      (p.nationalId && p.nationalId.includes(term)) ||
-      (p.program && p.program.includes(term));
-
-    const matchType = !type || p.projectType === type;
-    const matchDept = !dept || p.department === dept;
-    const matchYear = !year || String(p.graduationYear) === year;
-
-    return matchSearch && matchType && matchDept && matchYear;
-  });
-
-  renderTable(filtered);
-}
-
-function clearFilters() {
-  document.getElementById('searchInput').value = '';
-  document.getElementById('filterType').value = '';
-  document.getElementById('filterDept').value = '';
-  document.getElementById('filterYear').value = '';
-  filterData();
-}
-
-function updateFilterOptions() {
-  // FIX: حفظ القيم الحالية قبل التحديث
-  const curDept = document.getElementById('filterDept').value;
-  const curYear = document.getElementById('filterYear').value;
-
-  // الأقسام
-  const deptSel = document.getElementById('filterDept');
-  deptSel.innerHTML = '<option value="">جميع الأقسام</option>';
-  [...new Set(projects.map(p => p.department).filter(Boolean))].sort()
-    .forEach(d => { const o = document.createElement('option'); o.value = d; o.textContent = d; deptSel.appendChild(o); });
-  deptSel.value = curDept;
-
-  // السنوات
-  const yearSel = document.getElementById('filterYear');
-  yearSel.innerHTML = '<option value="">كل السنوات</option>';
-  [...new Set(projects.map(p => String(p.graduationYear)).filter(Boolean))].sort((a, b) => b - a)
-    .forEach(y => { const o = document.createElement('option'); o.value = y; o.textContent = `دفعة ${y}`; yearSel.appendChild(o); });
-  yearSel.value = curYear;
-}
-
-// ─────────────────────────────────────────────
-// STATS
-// ─────────────────────────────────────────────
-function updateStats() {
-  document.getElementById('statTotal').textContent = projects.length;
-  document.getElementById('statExcellent').textContent = projects.filter(p => parseFloat(p.score) >= 85).length;
-  document.getElementById('statPractical').textContent = projects.filter(p => p.projectType && p.projectType.includes('عمل فني')).length;
-  document.getElementById('statTheoretical').textContent = projects.filter(p => p.projectType === 'بحث نظري').length;
-}
-
-// ─────────────────────────────────────────────
-// EXPORT CSV
-// ─────────────────────────────────────────────
 function exportToCSV() {
-  if (projects.length === 0) { showToast('لا توجد بيانات للتصدير', 'warning'); return; }
-
-  const headers = ['رقم القيد','اسم الطالب','الرقم الوطني','الهاتف','القسم','البرنامج','التخصص','سنة الالتحاق','سنة التخرج','عنوان المشروع','نوع المشروع','المشرف','الدرجة','التقدير'];
+  if (projects.length === 0) return;
+  const headers = ['رقم القيد', 'اسم الطالب', 'القسم', 'البرنامج', 'سنة التخرج', 'عنوان المشروع', 'المشرف', 'الدرجة'];
   const rows = projects.map(p => [
-    p.studentId, p.studentName, p.nationalId, p.phone || '',
-    p.department, p.program, p.specialization || '',
-    p.enrollmentYear || '', p.graduationYear,
-    `"${(p.projectTitle || '').replace(/"/g, '""')}"`,
-    p.projectType, p.supervisor, p.score || '', p.grade || ''
-  ].join(','));
-
-  const csv = '\uFEFF' + [headers.join(','), ...rows].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `أرشيف_مشاريع_التخرج_${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('تم تحميل ملف CSV بنجاح', 'success');
+    p.studentId, p.studentName, p.department, p.program, p.graduationYear, p.projectTitle, p.supervisor, p.score
+  ]);
+  let csvContent = "\uFEFF" + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.setAttribute("download", "graduation_projects.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
-// ─────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────
-function saveLocal() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
-}
-
-function showTable() {
-  document.getElementById('loadingState').classList.add('hidden');
-  document.getElementById('mainTable').classList.remove('hidden');
-}
-
-function computeGrade(score) {
-  if (!score) return '';
-  const v = parseFloat(score);
-  if (isNaN(v)) return '';
-  if (v >= 85) return 'ممتاز';
-  if (v >= 75) return 'جيد جداً';
-  if (v >= 65) return 'جيد';
-  if (v >= 50) return 'مقبول';
-  return 'ضعيف';
-}
-
-// FIX: إصلاح دالة getGradeBadge (كانت bg لا تُعيَّن صحيحاً للراسبين)
-function getGradeBadge(score) {
-  if (!score || score === '') {
-    return '<span class="badge bg-gray-100 text-gray-400 border-gray-200">غير مقيم</span>';
-  }
-  const v = parseFloat(score);
-  let cls, label;
-  if (v >= 85)      { cls = 'bg-green-50 text-green-700 border-green-200';   label = 'ممتاز'; }
-  else if (v >= 75) { cls = 'bg-blue-50 text-blue-700 border-blue-200';      label = 'جيد جداً'; }
-  else if (v >= 65) { cls = 'bg-yellow-50 text-yellow-700 border-yellow-200'; label = 'جيد'; }
-  else if (v >= 50) { cls = 'bg-orange-50 text-orange-700 border-orange-200'; label = 'مقبول'; }
-  else              { cls = 'bg-red-50 text-red-700 border-red-200';          label = 'ضعيف'; } // FIX
-
-  return `<span class="badge ${cls}">${label} <span class="opacity-60">(${v}%)</span></span>`;
-}
-
-function getTypeBadge(type) {
-  let cls = 'bg-blue-50 text-blue-700 border-blue-200';
-  if (type === 'نظري + عمل فني') cls = 'bg-purple-50 text-purple-700 border-purple-200';
-  else if (type === 'بحث نظري')  cls = 'bg-orange-50 text-orange-700 border-orange-200';
-  else if (type === 'عمل فني')   cls = 'bg-teal-50 text-teal-700 border-teal-200';
-  return `<span class="badge ${cls}">${type}</span>`;
-}
-
-// FIX: إصلاح updatePrograms لتعيين البرنامج المحدد صحيحاً
-function updatePrograms(selectedProgram = '') {
-  const dept = document.getElementById('f_department').value;
-  const sel = document.getElementById('f_program');
-  sel.innerHTML = '<option value="" disabled>اختر البرنامج</option>';
-
-  (ACADEMIC[dept] || []).forEach(prog => {
-    const opt = document.createElement('option');
-    opt.value = opt.textContent = prog;
-    if (prog === selectedProgram) opt.selected = true;
-    sel.appendChild(opt);
-  });
-
-  // FIX: إذا لم يُعيَّن برنامج، اجعل الخيار الأول disabled selected
-  if (!selectedProgram || !ACADEMIC[dept]?.includes(selectedProgram)) {
-    sel.querySelector('option').selected = true;
-  }
+function showToast(msg, type = 'success') {
+  const toast = document.getElementById('toast');
+  const icon = document.getElementById('toastIcon');
+  document.getElementById('toastMsg').textContent = msg;
+  toast.className = `fixed bottom-5 right-5 z-[9999] flex items-center gap-3 bg-white border-r-4 ${type==='success'?'border-green-500':'border-red-500'} rounded-xl shadow-2xl px-5 py-3.5 max-w-sm transition-all duration-300 opacity-100 translate-y-0`;
+  setTimeout(() => {
+    toast.classList.add('opacity-0', 'translate-y-20');
+  }, 3000);
 }
 
 function showFormError(msg) {
-  document.getElementById('formError').classList.remove('hidden');
+  const err = document.getElementById('formError');
   document.getElementById('formErrorText').textContent = msg;
+  err.classList.remove('hidden');
 }
+
 function hideFormError() {
   document.getElementById('formError').classList.add('hidden');
 }
 
-function setSaveLoading(loading) {
-  const icon = document.getElementById('saveBtnIcon');
-  const text = document.getElementById('saveBtnText');
+function setSaveLoading(isLoading) {
   const btn = document.getElementById('saveBtn');
-  if (loading) {
+  const icon = document.getElementById('saveBtnIcon');
+  btn.disabled = isLoading;
+  if (isLoading) {
     icon.className = 'fas fa-circle-notch spinner';
-    text.textContent = 'جاري الحفظ...';
-    btn.disabled = true;
   } else {
     icon.className = 'fas fa-save';
-    text.textContent = 'حفظ البيانات';
-    btn.disabled = false;
   }
 }
 
-// ─────────────────────────────────────────────
-// MODAL CONTROLS (FIX: إصلاح كامل للأنيميشن)
-// ─────────────────────────────────────────────
-function openModal(id) {
-  const overlay = document.getElementById(id);
-  overlay.classList.remove('hidden');
-  requestAnimationFrame(() => overlay.classList.add('open'));
+function showTable() {
+  document.getElementById('loadingState').classList.add('hidden');
 }
 
-function closeModal(id) {
-  const overlay = document.getElementById(id);
-  overlay.classList.remove('open');
-
-  // FIX: تأخير الإخفاء لحين انتهاء أنيميشن CSS
-  setTimeout(() => {
-    overlay.classList.add('hidden');
-    if (id === 'addModal') {
-      document.getElementById('projectForm').reset();
-      // FIX: إعادة تعيين قائمة البرامج عند الإغلاق
-      document.getElementById('f_program').innerHTML = '<option value="" disabled selected>اختر البرنامج</option>';
-      hideFormError();
-      currentEditId = null;
-      document.getElementById('modalTitle').innerHTML = `
-        <span class="bg-blue-100 text-blue-700 w-8 h-8 rounded-lg flex items-center justify-center shrink-0"><i class="fas fa-plus text-sm"></i></span>
-        إضافة مشروع جديد
-      `;
-    }
-  }, 260);
+function clearFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('filterSupervisor').value = '';
+  document.getElementById('filterDept').value = '';
+  document.getElementById('filterYear').value = '';
+  renderTable(projects);
 }
 
-// FIX: إغلاق المودال عند الضغط على الخلفية
-function handleOverlayClick(e, modalId) {
-  if (e.target === document.getElementById(modalId)) {
-    closeModal(modalId);
+document.getElementById('f_pdfFile').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.type !== 'application/pdf') {
+    showToast('يرجى اختيار ملف PDF فقط', 'error');
+    this.value = '';
+    return;
   }
-}
-
-// ─────────────────────────────────────────────
-// TOAST
-// ─────────────────────────────────────────────
-let toastTimer;
-function showToast(msg, type = 'success') {
-  const toast = document.getElementById('toast');
-  const icon = document.getElementById('toastIcon');
-  const msgEl = document.getElementById('toastMsg');
-
-  const configs = {
-    success: { border: 'border-green-500', bg: 'bg-green-100', color: 'text-green-600', icon: 'fa-check' },
-    error:   { border: 'border-red-500',   bg: 'bg-red-100',   color: 'text-red-600',   icon: 'fa-circle-xmark' },
-    warning: { border: 'border-amber-500', bg: 'bg-amber-100', color: 'text-amber-600', icon: 'fa-triangle-exclamation' },
-    info:    { border: 'border-blue-500',  bg: 'bg-blue-100',  color: 'text-blue-600',  icon: 'fa-circle-info' }
-  };
-  const c = configs[type] || configs.success;
-
-  toast.className = `fixed bottom-5 right-5 z-[9999] flex items-center gap-3 bg-white border-r-4 ${c.border} rounded-xl shadow-2xl px-5 py-3.5 max-w-sm toast-enter pointer-events-auto`;
-  icon.className = `w-9 h-9 rounded-lg flex items-center justify-center ${c.bg} ${c.color} text-lg shrink-0`;
-  icon.innerHTML = `<i class="fas ${c.icon}"></i>`;
-  msgEl.textContent = msg;
-
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => {
-    toast.className = toast.className.replace('toast-enter', '') + ' translate-y-20 opacity-0 transition-all duration-300 pointer-events-none';
-  }, 3500);
-}
-
-// ─── Keyboard: Escape يغلق المودال ───
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    ['addModal', 'viewModal', 'gasModal'].forEach(id => {
-      const el = document.getElementById(id);
-      if (!el.classList.contains('hidden')) closeModal(id);
-    });
-  }
+  document.getElementById('pdfStatus').textContent = 'جاري معالجة الملف: ' + file.name;
+  document.getElementById('f_pdfUrl').value = 'file://' + file.name;
 });
+
 </script>
 </body>
 </html>
