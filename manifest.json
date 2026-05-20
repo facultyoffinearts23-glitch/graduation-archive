@@ -1,27 +1,22 @@
 {
-  "name": "اسم التطبيق الكامل",
-  "short_name": "التطبيق",
-  "description": "وصف مختصر للتطبيق",
-  "start_url": "/REPO_NAME/",
-  "scope": "/REPO_NAME/",
+  "name": "منظومة أرشفة مشاريع التخرج",
+  "short_name": "أرشيف التخرج",
+  "description": "منظومة توثيق وأرشفة مشاريع التخرج - كلية الفنون والتصميم",
+  "start_url": "index.html",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#f0f2f8",
+  "background_color": "#1e3a8a",
   "theme_color": "#1e3a8a",
-  "lang": "ar",
-  "dir": "rtl",
   "icons": [
     {
-      "src": "https://via.placeholder.com/192",
+      "src": "icon.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://via.placeholder.com/512",
+      "src": "icon.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
+      "type": "image/png"
     }
   ]
 }
