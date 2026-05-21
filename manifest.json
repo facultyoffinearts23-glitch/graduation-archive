@@ -2,12 +2,15 @@
   "name": "منظومة توثيق مشاريع التخرج",
   "short_name": "أرشيف التخرج",
   "description": "منظومة توثيق مشاريع التخرج - كلية الفنون والتصميم - جامعة طرابلس",
-  "start_url": "/",
+  "start_url": "https://facultyoffinearts23-glitch.github.io/graduation-archive/",
+  "scope": "https://facultyoffinearts23-glitch.github.io/graduation-archive/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1e3a8a",
   "orientation": "portrait-primary",
-  "scope": "/",
+  "lang": "ar",
+  "dir": "rtl",
+  "categories": ["education", "productivity"],
   "icons": [
     {
       "src": "favicon-16x16.png",
@@ -60,20 +63,13 @@
       "form_factor": "wide"
     }
   ],
-  "categories": ["education", "productivity"],
   "shortcuts": [
     {
       "name": "إضافة مشروع",
       "short_name": "إضافة",
       "description": "إضافة مشروع تخرج جديد",
-      "url": "/?action=add",
-      "icons": [
-        {
-          "src": "logo-192x192.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
+      "url": "https://facultyoffinearts23-glitch.github.io/graduation-archive/?action=add",
+      "icons": [{ "src": "logo-192x192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }
