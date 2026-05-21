@@ -28,29 +28,30 @@
 <script src="https://cdn.tailwindcss.com"></script>
 
 <!-- ═══════════════════ Service Worker للعمل Offline ═══════════════════ -->
+<!--
+  ⚠ تم إصلاح هذا القسم:
+  النسخة السابقة كانت تُسجّل SW عبر Blob URL (blob://) مما يجعل الـ scope
+  خاطئاً ويُسبب فتح PWA على / بدلاً من /graduation-archive/ → 404.
+  الإصلاح: التسجيل من ملف sw.js الحقيقي المستضاف على نفس النطاق.
+-->
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    const swCode = `
-const CACHE_NAME = 'fad-archive-v1';
-self.addEventListener('install', e => e.waitUntil(self.skipWaiting()));
-self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
-self.addEventListener('fetch', e => {
-  if (e.request.method === 'GET') {
-    e.respondWith(
-      caches.match(e.request).then(r => r || fetch(e.request).then(res => {
-        if (res && res.status === 200) {
-          caches.open(CACHE_NAME).then(c => c.put(e.request, res.clone()));
-        }
-        return res;
-      }).catch(() => new Response('Offline')))
-    );
-  }
-});
-    `;
-    const blob = new Blob([swCode], { type: 'application/javascript' });
-    const swUrl = URL.createObjectURL(blob);
-    navigator.serviceWorker.register(swUrl).catch(err => console.log('SW registration failed:', err));
+    navigator.serviceWorker
+      .register('sw.js', { scope: '/graduation-archive/' })
+      .then(reg => {
+        console.info('[PWA] SW registered. Scope:', reg.scope);
+        reg.addEventListener('updatefound', () => {
+          const w = reg.installing;
+          w.addEventListener('statechange', () => {
+            if (w.state === 'installed' && navigator.serviceWorker.controller) {
+              if (typeof showToast === 'function')
+                showToast('يتوفر تحديث جديد — أعد تحميل الصفحة', 'success');
+            }
+          });
+        });
+      })
+      .catch(err => console.warn('[PWA] SW registration failed:', err));
   });
 }
 </script>
