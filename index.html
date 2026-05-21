@@ -10,8 +10,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="أرشيف التخرج">
-<link rel="apple-touch-icon"
-      href="https://files.manuscdn.com/user_upload_by_module/session_file/310519663672341033/DPcqnCesIGqshKoH.webp">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="favicon-64x64.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <!-- ══════════════════════════════════════════════════════════════ -->
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,6 +26,36 @@
 <!-- مكتبة QR Code — تدعم QRCode.toDataURL() الـ async -->
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
+
+<!-- ═══════════════════ Service Worker للعمل Offline ═══════════════════ -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    const swCode = `
+const CACHE_NAME = 'fad-archive-v1';
+self.addEventListener('install', e => e.waitUntil(self.skipWaiting()));
+self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+self.addEventListener('fetch', e => {
+  if (e.request.method === 'GET') {
+    e.respondWith(
+      caches.match(e.request).then(r => r || fetch(e.request).then(res => {
+        if (res && res.status === 200) {
+          caches.open(CACHE_NAME).then(c => c.put(e.request, res.clone()));
+        }
+        return res;
+      }).catch(() => new Response('Offline')))
+    );
+  }
+});
+    `;
+    const blob = new Blob([swCode], { type: 'application/javascript' });
+    const swUrl = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(swUrl).catch(err => console.log('SW registration failed:', err));
+  });
+}
+</script>
+<!-- ════════════════════════════════════════════════════════════════════ -->
+
 <script>
   tailwind.config = {
     theme: {
@@ -217,7 +249,7 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
       <!-- Logo -->
       <div class="flex items-center gap-4">
         <div class="w-16 h-16 rounded-2xl bg-white overflow-hidden border border-white/20 flex items-center justify-center shadow-inner flex-shrink-0">
-          <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663672341033/DPcqnCesIGqshKoH.webp" alt="شعار الكلية" class="w-full h-full object-cover">
+          <img src="logo-192x192.png" alt="شعار الكلية" class="w-full h-full object-cover">
         </div>
         <div>
           <h1 class="text-2xl font-black tracking-tight">جامعة طرابلس</h1>
@@ -254,12 +286,7 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
         </button>
         <!-- ════════════════════════════════════════════════════════ -->
 
-        <!-- ═══ Download App Button ═══ -->
-        <button onclick="openModal('downloadModal')" class="flex items-center gap-2 bg-gradient-to-r from-gold to-yellow-500 hover:from-yellow-500 hover:to-gold text-blue-900 px-5 py-2 rounded-lg text-sm font-black shadow-md transition hover:-translate-y-0.5">
-          <i class="fas fa-mobile-alt"></i> <span>تثبيت التطبيق</span>
-        </button>
-
-        <button onclick="openModal('addModal')" class="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-5 py-2 rounded-lg text-sm font-black shadow-md transition hover:-translate-y-0.5">
+        <button onclick="openModal('addModal')" class="flex items-center gap-2 bg-gradient-to-r from-gold to-yellow-500 hover:from-yellow-500 hover:to-gold text-blue-900 px-5 py-2 rounded-lg text-sm font-black shadow-md transition hover:-translate-y-0.5">
           <i class="fas fa-plus"></i> إضافة مشروع
         </button>
       </div>
@@ -394,7 +421,6 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
 </footer>
 
 <!-- ════════════════════════════════════════════════
-     MODAL: Download Application (PWA Instructions)
 ════════════════════════════════════════════════ -->
 <div id="downloadModal" class="modal-overlay" onclick="handleOverlayClick(event,'downloadModal')">
   <div class="modal-box max-w-2xl" onclick="event.stopPropagation()">
@@ -692,9 +718,11 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
 
 const STORAGE_KEY = 'fad_archive_v3';
 const GAS_URL_KEY = 'fad_gas_url_v3';
+const OFFLINE_QUEUE_KEY = 'fad_offline_queue_v3';
 
 let projects = [];
 let currentEditId = null;
+let offlineQueue = [];
 const GAS_HARDCODED = 'https://script.google.com/macros/s/AKfycbydPqqiAaYhNpWu3NijFueGMpeUHo6XhD_jlZkD2tGq-fmJfLnVJKMCZECL8GjAzEq7hQ/exec';
 
 localStorage.setItem(GAS_URL_KEY, GAS_HARDCODED);
@@ -726,8 +754,21 @@ const ACADEMIC = {
 
 document.addEventListener('DOMContentLoaded', async () => {
   projects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  offlineQueue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
   
-  if (gasUrl) {
+  // تحديث حالة الاتصال عند التغيير
+  window.addEventListener('online', async () => {
+    setConnectionStatus('syncing', 'جاري المزامنة...');
+    if (gasUrl) {
+      await syncOfflineQueue();
+      await syncWithGAS();
+    }
+  });
+  window.addEventListener('offline', () => {
+    setConnectionStatus('offline', 'وضع محلي');
+  });
+  
+  if (navigator.onLine && gasUrl) {
     setConnectionStatus('syncing', 'جاري الاتصال...');
     await syncWithGAS(true);
   } else {
@@ -833,7 +874,44 @@ async function saveGASConfig() {
   gasUrl = url;
   localStorage.setItem(GAS_URL_KEY, url);
   closeModal('gasModal');
+  await syncOfflineQueue();
   await syncWithGAS();
+}
+
+// ── نظام قائمة الانتظار للعمليات Offline ──
+function addToOfflineQueue(action, data) {
+  offlineQueue.push({
+    id: 'QUEUE_' + Date.now(),
+    action,
+    data,
+    timestamp: new Date().toISOString()
+  });
+  localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(offlineQueue));
+}
+
+async function syncOfflineQueue() {
+  if (!gasUrl || offlineQueue.length === 0) return;
+  
+  const icon = document.getElementById('syncIcon');
+  icon.classList.add('spinner');
+  
+  for (const item of offlineQueue) {
+    try {
+      const result = await gasPost(item.action, item.data);
+      if (result?.status === 'ok') {
+        offlineQueue = offlineQueue.filter(q => q.id !== item.id);
+        localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(offlineQueue));
+      }
+    } catch (err) {
+      console.log('Failed to sync queue item:', item.id);
+    }
+  }
+  
+  icon.classList.remove('spinner');
+  
+  if (offlineQueue.length === 0) {
+    showToast('تمت مزامنة جميع البيانات بنجاح', 'success');
+  }
 }
 
 // ── File System Access API — ربط المجلد المحلي ──
@@ -923,7 +1001,16 @@ async function saveProject() {
     projects.unshift(project);
   }
   saveLocal(); renderTable(projects); updateStats();
-  if (gasUrl) await gasPost(currentEditId ? 'update' : 'add', { project });
+  
+  if (gasUrl) {
+    if (navigator.onLine) {
+      await gasPost(currentEditId ? 'update' : 'add', { project });
+    } else {
+      addToOfflineQueue(currentEditId ? 'update' : 'add', { project });
+      showToast('تم الحفظ محلياً - سيتم المزامنة عند عودة الاتصال', 'success');
+    }
+  }
+  
   setSaveLoading(false); closeModal('addModal');
   showToast(currentEditId ? 'تم التحديث بنجاح' : 'تمت الإضافة بنجاح', 'success');
 }
@@ -1076,7 +1163,17 @@ function editProject(id) {
 async function deleteProject(id) {
   if (!confirm('هل أنت متأكد من حذف هذا المشروع نهائياً؟')) return;
   projects = projects.filter(p => p.id !== id); saveLocal(); renderTable(projects); updateStats();
-  if (gasUrl) await gasPost('delete', { id }); showToast('تم الحذف بنجاح', 'success');
+  
+  if (gasUrl) {
+    if (navigator.onLine) {
+      await gasPost('delete', { id });
+    } else {
+      addToOfflineQueue('delete', { id });
+      showToast('تم الحذف محلياً - سيتم المزامنة عند عودة الاتصال', 'success');
+    }
+  } else {
+    showToast('تم الحذف بنجاح', 'success');
+  }
 }
 
 async function printProject(id) {
