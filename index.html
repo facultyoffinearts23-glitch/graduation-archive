@@ -98,6 +98,19 @@ tbody tr:nth-child(even) { background: #f7f9ff; }
 @media print { body > *:not(#printArea) { display: none !important; } #printArea { display: block !important; } @page { margin: 1.2cm; size: A4 portrait; } }
 
 .hidden-admin { display: none !important; }
+
+/* Golden Button Style */
+.btn-gold {
+    background: linear-gradient(to bottom right, #c8a84b, #b3943a);
+    color: #1e3a8a;
+    border: 1px solid #d4af37;
+    transition: all 0.3s ease;
+}
+.btn-gold:hover {
+    background: linear-gradient(to bottom right, #d4af37, #c8a84b);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(200, 168, 75, 0.3);
+}
 </style>
 </head>
 
@@ -121,6 +134,14 @@ tbody tr:nth-child(even) { background: #f7f9ff; }
       </div>
 
       <div class="flex items-center gap-3 w-full md:w-auto flex-wrap justify-center md:justify-end">
+        <!-- New Golden Buttons -->
+        <a href="https://arts-digital-library.web.app/" target="_blank" class="btn-gold flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black shadow-md">
+            <i class="fas fa-book-reader"></i> المكتبة الرقمية
+        </a>
+        <button onclick="showToast('دليل الكلية قيد التحديث', 'info')" class="btn-gold flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black shadow-md">
+            <i class="fas fa-info-circle"></i> دليل الكلية
+        </button>
+
         <div id="roleBadge" class="badge bg-white/10 text-yellow-300 border border-white/20 px-3 py-1.5 text-xs font-bold">
             <i class="fas fa-user-shield ml-1"></i> <span id="roleText">زائر</span>
         </div>
@@ -203,7 +224,7 @@ tbody tr:nth-child(even) { background: #f7f9ff; }
         <thead>
           <tr>
             <th class="px-5 py-4 w-12">#</th>
-            <th class="px-5 py-4">رقم القيد</th>
+            <th id="thStudentId" class="px-5 py-4">رقم القيد</th>
             <th class="px-5 py-4">اسم الطالب</th>
             <th class="px-5 py-4">عنوان المشروع</th>
             <th id="thSupervisor" class="px-5 py-4">المشرف</th>
@@ -382,7 +403,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   projects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
   offlineQueue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
   
-  // Restore role from session if exists
   const savedRole = sessionStorage.getItem(USER_ROLE_KEY);
   if (savedRole) currentRole = savedRole;
   applyPermissions();
@@ -439,17 +459,14 @@ function applyPermissions() {
     const isLibrarian = currentRole === ROLES.LIBRARIAN;
     const isAdmin = currentRole === ROLES.ADMIN;
 
-    // UI Elements
     document.getElementById('loginBtn').classList.toggle('hidden', !isVisitor);
     document.getElementById('logoutBtn').classList.toggle('hidden', isVisitor);
     
-    // Role Badge
     const roleText = document.getElementById('roleText');
     if (isAdmin) roleText.textContent = 'مدير التطبيق';
     else if (isLibrarian) roleText.textContent = 'مسؤول المكتبة';
     else roleText.textContent = 'زائر';
 
-    // Admin-only elements
     const adminElements = document.querySelectorAll('.hidden-admin');
     adminElements.forEach(el => {
         if (isAdmin) el.classList.remove('hidden-admin');
@@ -460,7 +477,8 @@ function applyPermissions() {
         }
     });
 
-    // Specific Table Columns Visibility
+    // Visitor Restricted Columns: Hide Student ID, Supervisor, Score
+    document.getElementById('thStudentId').style.display = isVisitor ? 'none' : 'table-cell';
     document.getElementById('thSupervisor').style.display = isVisitor ? 'none' : 'table-cell';
     document.getElementById('thScore').style.display = isVisitor ? 'none' : 'table-cell';
 }
@@ -492,7 +510,7 @@ function renderTable(data) {
 
     tr.innerHTML = `
       <td class="px-5 py-3.5 text-gray-400 font-bold text-xs">${i + 1}</td>
-      <td class="px-5 py-3.5 font-black text-gray-800 whitespace-nowrap">${p.studentId}</td>
+      <td class="px-5 py-3.5 font-black text-gray-800 whitespace-nowrap" style="display: ${isVisitor ? 'none' : 'table-cell'}">${p.studentId}</td>
       <td class="px-5 py-3.5 font-bold text-primary whitespace-nowrap">${p.studentName}</td>
       <td class="px-5 py-3.5 text-gray-700 max-w-xs"><div class="truncate font-medium" title="${p.projectTitle}">${p.projectTitle}</div></td>
       <td class="px-5 py-3.5 font-bold text-gray-800 whitespace-nowrap" style="display: ${isVisitor ? 'none' : 'table-cell'}">${p.supervisor}</td>
@@ -520,7 +538,7 @@ function viewProject(id) {
             <p class="text-xs font-black text-gray-400 uppercase tracking-wider mb-3 border-b pb-2"><i class="fas fa-user-graduate ml-1"></i> معلومات الطالب</p>
             <p class="text-lg font-black text-gray-900 mb-2">${p.studentName}</p>
             <div class="space-y-1.5 text-sm">
-                <div class="flex justify-between"><span class="text-gray-400">رقم القيد</span><span class="font-bold">${p.studentId}</span></div>
+                ${!isVisitor ? `<div class="flex justify-between"><span class="text-gray-400">رقم القيد</span><span class="font-bold">${p.studentId}</span></div>` : ''}
                 ${!isVisitor && p.enrollmentYear ? `<div class="flex justify-between"><span class="text-gray-400">سنة الالتحاق</span><span class="font-bold">${p.enrollmentYear}</span></div>` : ''}
             </div>
         </div>
@@ -853,9 +871,9 @@ function showToast(msg, type = 'success') {
   const toast = document.getElementById('toast');
   const icon = document.getElementById('toastIcon');
   document.getElementById('toastMsg').textContent = msg;
-  toast.className = `fixed bottom-5 right-5 z-[9999] flex items-center gap-3 bg-white border-r-4 rounded-xl shadow-2xl px-5 py-3.5 max-w-sm transition-all duration-300 pointer-events-none opacity-100 translate-y-0 ${type === 'success' ? 'border-green-500' : 'border-red-500'}`;
-  icon.className = `w-9 h-9 rounded-lg flex items-center justify-center text-lg shrink-0 ${type === 'success' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`;
-  icon.innerHTML = `<i class="fas fa-${type === 'success' ? 'check' : 'exclamation-circle'}"></i>`;
+  toast.className = `fixed bottom-5 right-5 z-[9999] flex items-center gap-3 bg-white border-r-4 rounded-xl shadow-2xl px-5 py-3.5 max-w-sm transition-all duration-300 pointer-events-none opacity-100 translate-y-0 ${type === 'success' ? 'border-green-500' : type === 'error' ? 'border-red-500' : 'border-blue-500'}`;
+  icon.className = `w-9 h-9 rounded-lg flex items-center justify-center text-lg shrink-0 ${type === 'success' ? 'bg-green-100 text-green-600' : type === 'error' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`;
+  icon.innerHTML = `<i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>`;
   setTimeout(() => { toast.classList.add('opacity-0', 'translate-y-20'); }, 3000);
 }
 
@@ -876,7 +894,7 @@ async function printProject(id) {
       const qrFallback = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(p.studentName + '\n' + p.studentId)}`;
       qrHtml = `<img src="${qrFallback}" alt="QR Code" style="width:100%;height:100%;display:block" crossorigin="anonymous">`;
     }
-    const printContent = `<div style="direction:rtl;font-family:'Cairo',sans-serif;color:#000;max-width:800px;margin:0 auto;padding:18px;position:relative"><div style="position:absolute;top:18px;left:18px;width:95px;height:95px;border:2px solid #1e3a8a;padding:3px;border-radius:5px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12)">${qrHtml}</div><div style="text-align:center;border-bottom:2.5px solid #1e3a8a;padding-bottom:10px;margin-bottom:14px"><img src="logo-192x192.png" alt="شعار الكلية" style="width:100px;height:100px;object-fit:contain;margin-bottom:4px"><h1 style="font-size:20px;font-weight:900;margin:4px 0 0;color:#1e3a8a">جامعة طرابلس</h1><h2 style="font-size:14px;font-weight:700;margin:2px 0 0;color:#333">كلية الفنون والتصميم</h2><p style="font-size:11px;font-weight:bold;color:#555;margin:5px 0 0;text-decoration:underline;letter-spacing:.02em">بطاقة بيانات مشروع تخرج</p></div><div style="text-align:center;margin-bottom:14px;background:#f4f6ff;padding:10px 14px;border-radius:7px;border:1px solid #dde3ff"><p style="font-size:10px;color:#777;margin:0 0 5px;font-weight:bold;text-transform:uppercase;letter-spacing:.05em">عنوان مشروع التخرج</p><h2 style="font-size:15px;font-weight:900;margin:0;color:#1e3a8a;line-height:1.45">${p.projectTitle}</h2></div><table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px"><tbody>${[['اسم الطالب', p.studentName, true], ['رقم القيد', p.studentId, false], ['القسم العلمي', p.department, false], ['البرنامج التخصصي', p.program, false], ['التخصص الدقيق', (!isVisitor && p.specialization) || '—', false], ['سنة الالتحاق', (!isVisitor && p.enrollmentYear) || '—', false], ['سنة التخرج', String(p.graduationYear), false], ['الأستاذ المشرف', isVisitor ? '—' : p.supervisor, false], ['التقييم النهائي', gradeText, true]].map(([lbl, val, bold]) => `<tr><td style="border:1px solid #ccc;padding:7px 10px;width:33%;background:#eef2ff;font-weight:bold;font-size:11px;color:#1e3a8a">${lbl}</td><td style="border:1px solid #ccc;padding:7px 10px;${bold ? 'font-weight:900;font-size:13px;color:#111' : 'font-size:11px;color:#333'}">${val}</td></tr>`).join('')}</tbody></table><div style="border-top:1px dashed #bbb;padding-top:14px;display:flex;justify-content:flex-end;align-items:flex-end"><div style="text-align:center;width:44%"><p style="font-size:11px;margin:0 0 45px;font-weight:bold;color:#1e3a8a">ختم وتوقيع القسم المختص</p><div style="width:100px;height:1px;background:#eee;margin:0 auto"></div><p style="font-size:9px;color:#999;margin-top:10px">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-LY')}</p></div></div></div>`;
+    const printContent = `<div style="direction:rtl;font-family:'Cairo',sans-serif;color:#000;max-width:800px;margin:0 auto;padding:18px;position:relative"><div style="position:absolute;top:18px;left:18px;width:95px;height:95px;border:2px solid #1e3a8a;padding:3px;border-radius:5px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12)">${qrHtml}</div><div style="text-align:center;border-bottom:2.5px solid #1e3a8a;padding-bottom:10px;margin-bottom:14px"><img src="logo-192x192.png" alt="شعار الكلية" style="width:100px;height:100px;object-fit:contain;margin-bottom:4px"><h1 style="font-size:20px;font-weight:900;margin:4px 0 0;color:#1e3a8a">جامعة طرابلس</h1><h2 style="font-size:14px;font-weight:700;margin:2px 0 0;color:#333">كلية الفنون والتصميم</h2><p style="font-size:11px;font-weight:bold;color:#555;margin:5px 0 0;text-decoration:underline;letter-spacing:.02em">بطاقة بيانات مشروع تخرج</p></div><div style="text-align:center;margin-bottom:14px;background:#f4f6ff;padding:10px 14px;border-radius:7px;border:1px solid #dde3ff"><p style="font-size:10px;color:#777;margin:0 0 5px;font-weight:bold;text-transform:uppercase;letter-spacing:.05em">عنوان مشروع التخرج</p><h2 style="font-size:15px;font-weight:900;margin:0;color:#1e3a8a;line-height:1.45">${p.projectTitle}</h2></div><table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px"><tbody>${[['اسم الطالب', p.studentName, true], ['رقم القيد', isVisitor ? '—' : p.studentId, false], ['القسم العلمي', p.department, false], ['البرنامج التخصصي', p.program, false], ['التخصص الدقيق', (!isVisitor && p.specialization) || '—', false], ['سنة الالتحاق', (!isVisitor && p.enrollmentYear) || '—', false], ['سنة التخرج', String(p.graduationYear), false], ['الأستاذ المشرف', isVisitor ? '—' : p.supervisor, false], ['التقييم النهائي', gradeText, true]].map(([lbl, val, bold]) => `<tr><td style="border:1px solid #ccc;padding:7px 10px;width:33%;background:#eef2ff;font-weight:bold;font-size:11px;color:#1e3a8a">${lbl}</td><td style="border:1px solid #ccc;padding:7px 10px;${bold ? 'font-weight:900;font-size:13px;color:#111' : 'font-size:11px;color:#333'}">${val}</td></tr>`).join('')}</tbody></table><div style="border-top:1px dashed #bbb;padding-top:14px;display:flex;justify-content:flex-end;align-items:flex-end"><div style="text-align:center;width:44%"><p style="font-size:11px;margin:0 0 45px;font-weight:bold;color:#1e3a8a">ختم وتوقيع القسم المختص</p><div style="width:100px;height:1px;background:#eee;margin:0 auto"></div><p style="font-size:9px;color:#999;margin-top:10px">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-LY')}</p></div></div></div>`;
     const frame = document.createElement('iframe');
     frame.style.display = 'none';
     document.body.appendChild(frame);
