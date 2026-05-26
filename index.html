@@ -222,6 +222,9 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
   @page { margin: 1.2cm; size: A4 portrait; }
 }
 
+/* ─── Admin-Only Elements ─── */
+.admin-only { display: none; }   /* مخفية افتراضياً — تُظهر عبر JS للمسؤول */
+
 /* ─── Skeleton Loading ─── */
 .skeleton {
   background: linear-gradient(90deg, #e8eaf0 25%, #f3f4f8 50%, #e8eaf0 75%);
@@ -259,46 +262,62 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
       </div>
 
       <!-- Actions -->
-      <div class="flex items-center gap-3 w-full md:w-auto flex-wrap justify-center md:justify-end">
+      <div class="flex flex-col items-center gap-3 w-full md:w-auto">
 
-        <div id="connectionStatus" class="badge border text-xs font-bold px-3 py-1.5 offline" title="حالة الاتصال بـ Google Sheets">
-          <span class="w-2 h-2 rounded-full bg-current opacity-80 inline-block"></span>
-          <span id="connectionText">وضع محلي</span>
+        <!-- الصف الأول: أزرار المسؤول فقط -->
+        <div class="flex items-center gap-2 flex-wrap justify-center">
+
+          <!-- مؤشر الاتصال — للمسؤول فقط -->
+          <div id="connectionStatus" class="badge border text-xs font-bold px-3 py-1.5 offline admin-only" title="حالة الاتصال بـ Google Sheets">
+            <span class="w-2 h-2 rounded-full bg-current opacity-80 inline-block"></span>
+            <span id="connectionText">وضع محلي</span>
+          </div>
+
+          <!-- مزامنة — للمسؤول فقط -->
+          <button id="syncBtn" onclick="syncWithGAS()" title="مزامنة مع Google Sheets"
+            class="admin-only flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white px-4 py-2 rounded-lg text-sm font-semibold border border-white/20 transition">
+            <i id="syncIcon" class="fas fa-sync-alt text-sm"></i>
+            <span class="hidden sm:inline">مزامنة</span>
+          </button>
+
+          <!-- تصدير CSV — للمسؤول فقط -->
+          <button id="csvBtn" onclick="exportToCSV()"
+            class="admin-only flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white px-4 py-2 rounded-lg text-sm font-semibold border border-white/20 transition">
+            <i class="fas fa-file-csv"></i>
+            <span class="hidden sm:inline">تصدير CSV</span>
+          </button>
+
+          <!-- تبديل الدور -->
+          <button onclick="toggleUserRole()" title="تبديل بين وضع الزائر والمسؤول"
+            class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-semibold border border-purple-700 transition">
+            <i class="fas fa-shield-alt"></i>
+            <span class="hidden sm:inline" id="roleDisplay">زائر</span>
+          </button>
+
+          <!-- تثبيت التطبيق — للمسؤول فقط -->
+          <button onclick="openModal('downloadModal')"
+            class="admin-only flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white px-4 py-2 rounded-lg text-sm font-semibold border border-white/20 transition">
+            <i class="fas fa-mobile-alt"></i>
+            <span class="hidden sm:inline">تثبيت</span>
+          </button>
         </div>
 
-        <button onclick="syncWithGAS()" title="مزامنة مع Google Sheets" class="flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white px-4 py-2 rounded-lg text-sm font-semibold border border-white/20 transition">
-          <i id="syncIcon" class="fas fa-sync-alt text-sm"></i>
-          <span class="hidden sm:inline">مزامنة</span>
-        </button>
+        <!-- الصف الثاني: الأزرار المركزية -->
+        <div class="flex items-center gap-3 justify-center w-full">
 
-        <button onclick="exportToCSV()" class="flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white px-4 py-2 rounded-lg text-sm font-semibold border border-white/20 transition">
-          <i class="fas fa-file-csv"></i>
-          <span class="hidden sm:inline">تصدير CSV</span>
-        </button>
+          <!-- زر العودة للمكتبة الرقمية -->
+          <a href="https://arts-digital-library.web.app/" target="_blank" rel="noopener"
+            class="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-lg text-sm font-bold border border-white/20 transition hover:-translate-y-0.5 shadow-sm">
+            <i class="fas fa-arrow-right text-yellow-300"></i>
+            <span>المكتبة الرقمية</span>
+          </a>
 
-        <button onclick="toggleUserRole()" title="تبديل بين وضع الزائر والمسؤول" class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-semibold border border-purple-700 transition">
-          <i class="fas fa-shield-alt"></i>
-          <span class="hidden sm:inline" id="roleDisplay">زائر</span>
-        </button>
-
-        <!-- ═══ Local Folder Button — File System Access API ═══ -->
-        <button id="localFolderBtn"
-                onclick="selectLocalFolder()"
-                title="ربط مجلد الأرشيف المحلي على القرص الصلب"
-                class="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-semibold border border-amber-700 shadow-md transition">
-          <i class="fas fa-folder-open text-sm"></i>
-          <span id="localFolderBtnText" class="hidden sm:inline">ربط المجلد المحلي</span>
-        </button>
-        <!-- ════════════════════════════════════════════════════════ -->
-
-        <!-- ═══ Download App Button ═══ -->
-        <button onclick="openModal('downloadModal')" class="flex items-center gap-2 bg-gradient-to-r from-gold to-yellow-500 hover:from-yellow-500 hover:to-gold text-blue-900 px-5 py-2 rounded-lg text-sm font-black shadow-md transition hover:-translate-y-0.5">
-          <i class="fas fa-mobile-alt"></i> <span>تثبيت التطبيق</span>
-        </button>
-
-        <button onclick="openModal('addModal')" class="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-5 py-2 rounded-lg text-sm font-black shadow-md transition hover:-translate-y-0.5">
-          <i class="fas fa-plus"></i> إضافة مشروع
-        </button>
+          <!-- زر إضافة مشروع — للمسؤول فقط -->
+          <button onclick="openModal('addModal')"
+            class="admin-only flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-blue-900 px-6 py-2.5 rounded-lg text-sm font-black shadow-lg transition hover:-translate-y-0.5 border border-yellow-300">
+            <i class="fas fa-plus"></i> إضافة مشروع تخرج
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -390,7 +409,7 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
             <th class="px-5 py-3.5 text-right min-w-[180px]">القسم / البرنامج</th>
             <th class="px-5 py-3.5 text-center">سنة التخرج</th>
             <th class="px-5 py-3.5 text-center">التقييم</th>
-            <th class="px-5 py-3.5 text-center">إجراءات</th>
+            <th id="actionsHeader" class="px-5 py-3.5 text-center admin-only">إجراءات</th>
           </tr>
         </thead>
         <tbody id="tableBody" class="divide-y divide-gray-100"></tbody>
@@ -632,10 +651,12 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
               <input id="f_score" class="form-input" type="number" min="0" max="100" step="0.5" placeholder="مثال: 87">
             </div>
             <div class="sm:col-span-2">
-              <label class="form-label">رفع ملف المشروع (PDF)</label>
-              <input id="f_pdfFile" class="form-input" type="file" accept=".pdf">
-              <input id="f_pdfUrl" type="hidden">
-              <p id="pdfStatus" class="text-xs text-gray-500 mt-1"></p>
+              <label class="form-label">رابط ملف المشروع (PDF)</label>
+              <div class="flex gap-2">
+                <input id="f_pdfUrl" class="form-input flex-1" type="url" placeholder="https://drive.google.com/... أو أي رابط مباشر للملف">
+              </div>
+              <p class="text-xs text-gray-400 mt-1"><i class="fas fa-info-circle ml-1"></i>ارفع الملف على Google Drive أو أي خدمة سحابية ثم الصق الرابط هنا</p>
+              <p id="pdfStatus" class="text-xs text-green-600 mt-1 font-semibold"></p>
             </div>
           </div>
         </fieldset>
@@ -743,8 +764,7 @@ const GAS_HARDCODED = 'https://script.google.com/macros/s/AKfycbydPqqiAaYhNpWu3N
 localStorage.setItem(GAS_URL_KEY, GAS_HARDCODED);
 let gasUrl = GAS_HARDCODED;
 
-// ── File System Access API: مقبض المجلد المحلي (يعيش طوال جلسة الصفحة) ──
-let localFolderHandle = null;
+// ── PDF: رابط سحابي فقط ──
 
 const ACADEMIC = {
   'قسم الفنون الجميلة والتطبيقية': [
@@ -894,48 +914,6 @@ async function saveGASConfig() {
   await syncWithGAS();
 }
 
-// ── File System Access API — ربط المجلد المحلي ──
-async function selectLocalFolder() {
-  if (!('showDirectoryPicker' in window)) {
-    showToast('متصفحك لا يدعم هذه الخاصية — استخدم Chrome أو Edge', 'error');
-    return;
-  }
-  try {
-    localFolderHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-    const btn  = document.getElementById('localFolderBtn');
-    const text = document.getElementById('localFolderBtnText');
-    if (btn) {
-      btn.classList.remove('bg-amber-600', 'hover:bg-amber-500', 'border-amber-700');
-      btn.classList.add('bg-green-600', 'hover:bg-green-500', 'border-green-700');
-    }
-    if (text) text.textContent = 'تم ربط المجلد ✓';
-    showToast(`تم ربط المجلد: ${localFolderHandle.name} ✓`, 'success');
-  } catch (err) {
-    if (err.name !== 'AbortError') {
-      showToast('فشل ربط المجلد — تحقق من الصلاحيات', 'error');
-    }
-  }
-}
-
-async function storePDFLocally(studentId, studentName) {
-  const fileInput = document.getElementById('f_pdfFile');
-  if (!fileInput || fileInput.files.length === 0) return null;
-  if (!localFolderHandle) {
-    throw new Error('يرجى ربط مجلد الحفظ المحلي من شريط الأدوات أعلى الشاشة أولاً');
-  }
-  const file = fileInput.files[0];
-  const cleanName = studentName.trim().replace(/\s+/g, '_');
-  const finalFileName = `${studentId}_${cleanName}.pdf`;
-  try {
-    const fileHandle = await localFolderHandle.getFileHandle(finalFileName, { create: true });
-    const writable   = await fileHandle.createWritable();
-    await writable.write(file);
-    await writable.close();
-    return finalFileName;
-  } catch (err) {
-    throw new Error(`فشل حفظ الملف محلياً (${err.message})`);
-  }
-}
 
 async function saveProject() {
   const required = {
@@ -951,16 +929,9 @@ async function saveProject() {
   const duplicate = projects.find(p => p.studentId === studentId && p.id !== currentEditId);
   if (duplicate) { showFormError(`رقم القيد ${studentId} مسجل مسبقاً`); return; }
   hideFormError();
-  const fileInput = document.getElementById('f_pdfFile');
-  let finalPdfRef = document.getElementById('f_pdfUrl').value.trim();
-  if (fileInput && fileInput.files.length > 0) {
-    setSaveLoading(true);
-    try {
-      finalPdfRef = await storePDFLocally(studentId, studentName);
-      document.getElementById('f_pdfUrl').value = finalPdfRef;
-    } catch (err) { showFormError(err.message); setSaveLoading(false); return; }
-  } else { setSaveLoading(true); }
+  setSaveLoading(true);
   const score = document.getElementById('f_score').value;
+  const finalPdfRef = document.getElementById('f_pdfUrl').value.trim();
   const project = {
     id: currentEditId || ('PRJ_' + Date.now()), studentId, studentName,
     department: document.getElementById('f_department').value,
@@ -1008,9 +979,9 @@ function renderTable(data) {
     const tr = document.createElement('tr');
     tr.className = 'animate-row';
     tr.style.animationDelay = `${Math.min(i * 30, 400)}ms`;
-    // تخصيص العرض بناءً على الصلاحيات
-    const studentIdDisplay = userRole === 'admin' ? p.studentId : '***';
-    const gradeDisplay = userRole === 'admin' ? getGradeBadge(p.score) : '<span class="text-gray-300">—</span>';
+    const isAdmin = userRole === 'admin';
+    const studentIdDisplay = isAdmin ? p.studentId : '***';
+    const gradeDisplay = isAdmin ? getGradeBadge(p.score) : '<span class="text-gray-300">—</span>';
     
     tr.innerHTML = `
       <td class="px-5 py-3.5 text-gray-400 font-bold text-xs">${i + 1}</td>
@@ -1021,13 +992,13 @@ function renderTable(data) {
       <td class="px-5 py-3.5"><div class="font-bold text-gray-800 text-sm whitespace-nowrap">${p.department}</div><div class="text-xs text-gray-400 mt-0.5">${p.program || ''}</div></td>
       <td class="px-5 py-3.5 text-center font-black text-gray-800">${p.graduationYear}</td>
       <td class="px-5 py-3.5 text-center">${gradeDisplay}</td>
-      <td class="px-5 py-3.5 text-center whitespace-nowrap">
+      ${isAdmin ? `<td class="px-5 py-3.5 text-center whitespace-nowrap">
         <div class="flex items-center justify-center gap-1.5">
           <button onclick="viewProject('${p.id}')" class="w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white border border-blue-100 flex items-center justify-center transition"><i class="fas fa-eye text-xs"></i></button>
-          ${userRole === 'admin' ? `<button onclick="editProject('${p.id}')" class="w-8 h-8 rounded-lg bg-amber-50 hover:bg-amber-500 text-amber-600 hover:text-white border border-amber-100 flex items-center justify-center transition"><i class="fas fa-edit text-xs"></i></button>` : ''}
-          ${userRole === 'admin' ? `<button onclick="deleteProject('${p.id}')" class="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-500 text-red-600 hover:text-white border border-red-100 flex items-center justify-center transition"><i class="fas fa-trash text-xs"></i></button>` : ''}
+          <button onclick="editProject('${p.id}')" class="w-8 h-8 rounded-lg bg-amber-50 hover:bg-amber-500 text-amber-600 hover:text-white border border-amber-100 flex items-center justify-center transition"><i class="fas fa-edit text-xs"></i></button>
+          <button onclick="deleteProject('${p.id}')" class="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-500 text-red-600 hover:text-white border border-red-100 flex items-center justify-center transition"><i class="fas fa-trash text-xs"></i></button>
         </div>
-      </td>
+      </td>` : ''}
     `;
     tbody.appendChild(tr);
   });
@@ -1105,7 +1076,9 @@ function updatePrograms() {
 
 function viewProject(id) {
   const p = projects.find(x => x.id === id); if (!p) return;
-  const pdfLink = p.pdfUrl ? (p.pdfUrl.startsWith('http') ? `<a href="${p.pdfUrl}" target="_blank" rel="noopener" class="flex items-center gap-2 text-blue-700 hover:text-blue-900 font-bold text-sm bg-blue-50 px-3 py-2 rounded-lg border border-blue-200 transition hover:bg-blue-100"><i class="fas fa-file-pdf text-red-500"></i> فتح ملف المشروع (سحابي)</a>` : `<button onclick="openLocalPDF('${p.pdfUrl.replace(/'/g, "\\'")}')"; class="flex items-center gap-2 text-amber-700 hover:text-amber-900 font-bold text-sm bg-amber-50 px-3 py-2 rounded-lg border border-amber-200 transition hover:bg-amber-100"><i class="fas fa-folder-open text-amber-500"></i> فتح من القرص الصلب <span class="text-xs text-amber-500 font-normal">(${p.pdfUrl})</span></button>`) : `<span class="text-gray-400 text-sm italic">لا يوجد ملف مرفق</span>`;
+  const pdfLink = p.pdfUrl
+    ? `<a href="${p.pdfUrl}" target="_blank" rel="noopener" class="flex items-center gap-2 text-blue-700 hover:text-blue-900 font-bold text-sm bg-blue-50 px-3 py-2 rounded-lg border border-blue-200 transition hover:bg-blue-100"><i class="fas fa-file-pdf text-red-500"></i> فتح ملف المشروع</a>`
+    : `<span class="text-gray-400 text-sm italic">لا يوجد ملف مرفق</span>`;
   
   // تخصيص العرض في نافذة التفاصيل بناءً على الصلاحيات
   const studentIdDisplay = userRole === 'admin' ? p.studentId : '***';
@@ -1121,7 +1094,9 @@ function viewProject(id) {
       </div>
     </div>
   `;
-  document.getElementById('viewFooter').innerHTML = `<button onclick="printProject('${id}')" class="flex items-center gap-2 bg-primary hover:bg-blue-800 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-md transition"><i class="fas fa-print"></i> طباعة البطاقة</button><button onclick="closeModal('viewModal')" class="px-6 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg border border-gray-200 transition">إغلاق</button>`;
+  document.getElementById('viewFooter').innerHTML = userRole === 'admin'
+    ? `<button onclick="printProject('${id}')" class="flex items-center gap-2 bg-primary hover:bg-blue-800 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-md transition"><i class="fas fa-print"></i> طباعة البطاقة</button><button onclick="closeModal('viewModal')" class="px-6 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg border border-gray-200 transition">إغلاق</button>`
+    : `<button onclick="closeModal('viewModal')" class="px-6 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg border border-gray-200 transition">إغلاق</button>`;
   openModal('viewModal');
 }
 
@@ -1191,22 +1166,14 @@ function showTable() { document.getElementById('loadingState').classList.add('hi
 function clearFilters() { document.getElementById('searchInput').value = ''; document.getElementById('filterSupervisor').value = ''; document.getElementById('filterDept').value = ''; document.getElementById('filterYear').value = ''; renderTable(projects); }
 
 function updateUIBasedOnRole() {
-  const addBtn = document.querySelector('button[onclick="openModal(\'addModal\')"]');
-  const downloadBtn = document.querySelector('button[onclick="openModal(\'downloadModal\')"]');
-  const localFolderBtn = document.getElementById('localFolderBtn');
-  const gasBtn = document.querySelector('button[onclick="showGASConfig()"]');
-  
-  if (userRole === 'visitor') {
-    if (addBtn) addBtn.style.display = 'none';
-    if (downloadBtn) downloadBtn.style.display = 'none';
-    if (localFolderBtn) localFolderBtn.style.display = 'none';
-    if (gasBtn) gasBtn.style.display = 'none';
-  } else {
-    if (addBtn) addBtn.style.display = 'flex';
-    if (downloadBtn) downloadBtn.style.display = 'flex';
-    if (localFolderBtn) localFolderBtn.style.display = 'flex';
-    if (gasBtn) gasBtn.style.display = 'flex';
-  }
+  const isAdmin = userRole === 'admin';
+  // إخفاء/إظهار كل عناصر admin-only دفعة واحدة
+  document.querySelectorAll('.admin-only').forEach(el => {
+    el.style.display = isAdmin ? (el.tagName === 'SPAN' || el.tagName === 'TH' ? '' : 'flex') : 'none';
+  });
+  // عمود الإجراءات في الجدول يحتاج display:table-cell
+  const actionsHeader = document.getElementById('actionsHeader');
+  if (actionsHeader) actionsHeader.style.display = isAdmin ? 'table-cell' : 'none';
 }
 
 function toggleUserRole() {
@@ -1219,25 +1186,6 @@ function toggleUserRole() {
   showToast(userRole === 'admin' ? 'تم التبديل إلى وضع المسؤول' : 'تم التبديل إلى وضع الزائر', 'success');
 }
 
-document.getElementById('f_pdfFile').addEventListener('change', function(e) {
-  const file = e.target.files[0]; if (!file) return;
-  if (file.type !== 'application/pdf') { showToast('يرجى اختيار ملف PDF فقط', 'error'); this.value = ''; return; }
-  document.getElementById('pdfStatus').textContent = `جاهز للحفظ: ${file.name}`;
-  document.getElementById('f_pdfUrl').value = '';
-});
-
-async function openLocalPDF(fileName) {
-  if (!fileName) { showToast('لا يوجد ملف PDF مؤرشف لهذا المشروع', 'error'); return; }
-  if (!localFolderHandle) { showToast('يرجى ربط مجلد الأرشيف المحلي أولاً', 'error'); return; }
-  try {
-    const fileHandle = await localFolderHandle.getFileHandle(fileName);
-    const file = await fileHandle.getFile();
-    const objectUrl = URL.createObjectURL(file);
-    const tab = window.open(objectUrl, '_blank');
-    if (tab) { setTimeout(() => URL.revokeObjectURL(objectUrl), 60000); }
-    else { const a = document.createElement('a'); a.href = objectUrl; a.download = fileName; a.click(); setTimeout(() => URL.revokeObjectURL(objectUrl), 5000); showToast('تم تنزيل الملف', 'success'); }
-  } catch (err) { showToast('تعذّر فتح الملف — تحقق من ربط المجلد الصحيح', 'error'); }
-}
 
 // ── PWA Installation Logic ──
 let deferredInstallPrompt = null;
