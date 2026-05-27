@@ -223,7 +223,10 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
 }
 
 /* ─── Admin-Only Elements ─── */
-.admin-only { display: none; }   /* مخفية افتراضياً — تُظهر عبر JS للمسؤول */
+.admin-only { display: none !important; }  /* مخفية افتراضياً — !important يمنع Tailwind من تجاوزها */
+.admin-only.is-visible-flex        { display: flex        !important; }
+.admin-only.is-visible-table-cell  { display: table-cell  !important; }
+.admin-only.is-visible-inline-flex { display: inline-flex !important; }
 
 /* ─── Skeleton Loading ─── */
 .skeleton {
@@ -237,6 +240,10 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
   100% { background-position: -200% 0; }
 }
 </style>
+
+<!-- Firebase SDKs — نفس مشروع المكتبة الرقمية -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js" defer></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js" defer></script>
 </head>
 
 <body class="flex flex-col min-h-screen">
@@ -287,11 +294,11 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
             <span class="hidden sm:inline">تصدير CSV</span>
           </button>
 
-          <!-- تبديل الدور -->
-          <button onclick="toggleUserRole()" title="تبديل بين وضع الزائر والمسؤول"
+          <!-- زر تسجيل الدخول / الخروج -->
+          <button id="authBtn" onclick="handleAuthBtn()"
             class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-semibold border border-purple-700 transition">
-            <i class="fas fa-shield-alt"></i>
-            <span class="hidden sm:inline" id="roleDisplay">زائر</span>
+            <i id="authBtnIcon" class="fas fa-lock"></i>
+            <span class="hidden sm:inline" id="authBtnText">دخول المسؤول</span>
           </button>
 
           <!-- تثبيت التطبيق — للمسؤول فقط -->
@@ -327,7 +334,7 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
 <main class="container mx-auto px-4 py-6 flex-grow flex flex-col gap-5">
 
   <!-- GAS Config Banner -->
-  <div id="gasBanner" class="hidden bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+  <div id="gasBanner" class="hidden admin-only bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
     <div class="flex items-start gap-3">
       <i class="fas fa-cloud-arrow-up text-blue-500 text-xl mt-0.5"></i>
       <div>
@@ -434,7 +441,7 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
         <span>المعروض: <span id="filteredCount" class="text-primary">0</span></span>
         <span>الإجمالي: <span id="totalCount" class="text-primary">0</span></span>
       </div>
-      <div id="lastSyncTime">آخر مزامنة: --:--</div>
+      <div id="lastSyncTime" class="admin-only text-gray-400 text-xs">آخر مزامنة: --:--</div>
     </div>
   </div>
 </main>
@@ -738,6 +745,49 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
   </div>
 </div>
 
+<!-- ════ MODAL: تسجيل دخول المسؤول ════ -->
+<div id="loginModal" class="modal-overlay" onclick="handleOverlayClick(event,'loginModal')">
+  <div class="modal-box max-w-md" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between px-6 py-5 bg-gradient-to-l from-purple-900 to-purple-700 text-white shrink-0 rounded-t-2xl">
+      <h3 class="text-lg font-black flex items-center gap-3">
+        <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center"><i class="fas fa-shield-alt text-xl"></i></div>
+        دخول المسؤول
+      </h3>
+      <button onclick="closeModal('loginModal')" class="w-9 h-9 rounded-xl text-white/60 hover:text-white hover:bg-white/20 flex items-center justify-center transition"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="p-7 space-y-5 bg-white">
+      <div class="bg-purple-50 border border-purple-100 rounded-xl p-4 flex items-center gap-3">
+        <i class="fas fa-info-circle text-purple-500 text-lg shrink-0"></i>
+        <p class="text-xs text-purple-700 font-semibold">هذه المنطقة للمسؤولين المعتمدين فقط. استخدم نفس بيانات الدخول الخاصة بالمكتبة الرقمية.</p>
+      </div>
+      <div>
+        <label class="form-label">البريد الإلكتروني</label>
+        <div class="relative">
+          <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400"><i class="fas fa-envelope text-sm"></i></span>
+          <input id="loginEmail" class="form-input pr-9" type="email" placeholder="admin@example.com" autocomplete="username">
+        </div>
+      </div>
+      <div>
+        <label class="form-label">كلمة المرور</label>
+        <div class="relative">
+          <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400"><i class="fas fa-lock text-sm"></i></span>
+          <input id="loginPassword" class="form-input pr-9" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+          <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 hover:text-gray-600"><i id="pwdEyeIcon" class="fas fa-eye text-sm"></i></button>
+        </div>
+      </div>
+      <div id="loginError" class="hidden bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm font-semibold flex items-center gap-2">
+        <i class="fas fa-circle-exclamation"></i> <span id="loginErrorText"></span>
+      </div>
+    </div>
+    <div class="px-7 py-5 border-t bg-gray-50 flex justify-end gap-3 rounded-b-2xl">
+      <button onclick="closeModal('loginModal')" class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition">إلغاء</button>
+      <button id="loginBtn" onclick="doLogin()" class="px-7 py-2.5 text-sm font-black text-white bg-purple-700 hover:bg-purple-800 rounded-lg shadow-md transition flex items-center gap-2">
+        <i id="loginBtnIcon" class="fas fa-sign-in-alt"></i> <span id="loginBtnText">تسجيل الدخول</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ─── TOAST Notification ─── -->
 <div id="toast" class="fixed bottom-5 right-5 z-[9999] flex items-center gap-3 bg-white border-r-4 border-green-500 rounded-xl shadow-2xl px-5 py-3.5 max-w-sm translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
   <div id="toastIcon" class="w-9 h-9 rounded-lg flex items-center justify-center bg-green-100 text-green-600 text-lg shrink-0">
@@ -753,16 +803,161 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
 'use strict';
 
 const STORAGE_KEY = 'fad_archive_v3';
-const GAS_URL_KEY = 'fad_gas_url_v3';
-const ROLE_KEY = 'fad_user_role_v3';
+const GAS_URL_KEY  = 'fad_gas_url_v3';
 
-let projects = [];
+// ══════════════════════════════════════════════════════════
+// Firebase — نفس مشروع المكتبة الرقمية لكلية الفنون والتصميم
+// ══════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyB7fpWIDRXiuf642M0PG4wKr8oLAcIUMlc",
+  authDomain:        "arts-digital-library.firebaseapp.com",
+  projectId:         "arts-digital-library",
+  storageBucket:     "arts-digital-library.firebasestorage.app",
+  messagingSenderId: "1035292297214",
+  appId:             "1:1035292297214:web:0a881825940c59db9522af"
+};
+
+// الإيميلات المسموح لها بصلاحيات المسؤول
+const ALLOWED_ADMINS = ['faculty.of.fine.arts.23@gmail.com'];
+
+let firebaseAuth = null;   // يُهيَّأ عند تحميل Firebase
+let projects      = [];
 let currentEditId = null;
-let userRole = localStorage.getItem(ROLE_KEY) || 'visitor'; // 'visitor' or 'admin'
-const GAS_HARDCODED = 'https://script.google.com/macros/s/AKfycbydPqqiAaYhNpWu3NijFueGMpeUHo6XhD_jlZkD2tGq-fmJfLnVJKMCZECL8GjAzEq7hQ/exec';
+let userRole      = 'visitor';   // القيمة الافتراضية دائماً زائر
 
+const GAS_HARDCODED = 'https://script.google.com/macros/s/AKfycbydPqqiAaYhNpWu3NijFueGMpeUHo6XhD_jlZkD2tGq-fmJfLnVJKMCZECL8GjAzEq7hQ/exec';
 localStorage.setItem(GAS_URL_KEY, GAS_HARDCODED);
 let gasUrl = GAS_HARDCODED;
+
+// ══════════════════════════════════════════════════════════
+// تهيئة Firebase والاستماع لحالة المصادقة
+// ══════════════════════════════════════════════════════════
+function initFirebaseAuth() {
+  if (typeof firebase === 'undefined') {
+    setTimeout(initFirebaseAuth, 400);
+    return;
+  }
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  firebaseAuth = firebase.auth();
+
+  // الاستماع لأي تغيير في حالة الجلسة
+  firebaseAuth.onAuthStateChanged(function(user) {
+    if (user && ALLOWED_ADMINS.includes(user.email)) {
+      userRole = 'admin';
+    } else if (user) {
+      // مستخدم مسجّل لكن غير مصرّح له
+      firebaseAuth.signOut();
+      userRole = 'visitor';
+      showToast('هذا الحساب لا يملك صلاحيات الإدارة', 'error');
+    } else {
+      userRole = 'visitor';
+    }
+    updateAuthButton();
+    updateUIBasedOnRole();
+    renderTable(projects);
+  });
+}
+
+// ── تسجيل الدخول عبر Firebase ──
+async function doLogin() {
+  const email    = document.getElementById('loginEmail').value.trim().toLowerCase();
+  const password = document.getElementById('loginPassword').value;
+  const errorEl  = document.getElementById('loginError');
+  const errorTxt = document.getElementById('loginErrorText');
+
+  errorEl.classList.add('hidden');
+
+  if (!email || !password) {
+    errorTxt.textContent = 'يرجى إدخال البريد الإلكتروني وكلمة المرور';
+    errorEl.classList.remove('hidden');
+    return;
+  }
+
+  if (firebaseAuth === null) {
+    errorTxt.textContent = 'جاري الاتصال بالخادم، يرجى الانتظار لحظة...';
+    errorEl.classList.remove('hidden');
+    return;
+  }
+
+  // تعطيل الزر أثناء التحقق
+  document.getElementById('loginBtn').disabled = true;
+  document.getElementById('loginBtnIcon').className = 'fas fa-circle-notch spinner';
+  document.getElementById('loginBtnText').textContent = 'جاري التحقق...';
+
+  try {
+    await firebaseAuth.signInWithEmailAndPassword(email, password);
+    // onAuthStateChanged سيتولى باقي الإجراءات تلقائياً
+    document.getElementById('loginEmail').value    = '';
+    document.getElementById('loginPassword').value = '';
+    closeModal('loginModal');
+    showToast('تم تسجيل الدخول بنجاح ✓', 'success');
+    if (gasUrl) syncWithGAS(true);
+  } catch (err) {
+    let msg = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+    if (err.code === 'auth/too-many-requests')
+      msg = 'تم تجميد الحساب مؤقتاً بسبب محاولات متعددة، حاول لاحقاً';
+    if (err.code === 'auth/network-request-failed')
+      msg = 'تعذّر الاتصال بالإنترنت، تحقق من اتصالك';
+    errorTxt.textContent = msg;
+    errorEl.classList.remove('hidden');
+    document.getElementById('loginPassword').value = '';
+  } finally {
+    document.getElementById('loginBtn').disabled = false;
+    document.getElementById('loginBtnIcon').className = 'fas fa-sign-in-alt';
+    document.getElementById('loginBtnText').textContent = 'تسجيل الدخول';
+  }
+}
+
+// ── تسجيل الخروج عبر Firebase ──
+function doLogout() {
+  if (!confirm('هل أنت متأكد من تسجيل الخروج؟')) return;
+  if (firebaseAuth) {
+    firebaseAuth.signOut()
+      .then(() => showToast('تم تسجيل الخروج بأمان', 'info'))
+      .catch(() => showToast('حدث خطأ أثناء الخروج', 'error'));
+  }
+}
+
+// ── معالج زر القفل / الخروج ──
+function handleAuthBtn() {
+  if (userRole === 'admin') {
+    doLogout();
+  } else {
+    document.getElementById('loginEmail').value    = '';
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginError').classList.add('hidden');
+    openModal('loginModal');
+  }
+}
+
+// ── تحديث مظهر زر الدخول/الخروج ──
+function updateAuthButton() {
+  const icon = document.getElementById('authBtnIcon');
+  const text = document.getElementById('authBtnText');
+  const btn  = document.getElementById('authBtn');
+  if (userRole === 'admin') {
+    icon.className = 'fas fa-sign-out-alt';
+    if (text) text.textContent = 'تسجيل الخروج';
+    btn.className = 'flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold border border-red-700 transition';
+  } else {
+    icon.className = 'fas fa-lock';
+    if (text) text.textContent = 'دخول المسؤول';
+    btn.className = 'flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-semibold border border-purple-700 transition';
+  }
+}
+
+// ── إظهار/إخفاء كلمة المرور ──
+function togglePasswordVisibility() {
+  const input = document.getElementById('loginPassword');
+  const icon  = document.getElementById('pwdEyeIcon');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.className = 'fas fa-eye-slash text-sm';
+  } else {
+    input.type = 'password';
+    icon.className = 'fas fa-eye text-sm';
+  }
+}
 
 // ── PDF: رابط سحابي فقط ──
 
@@ -788,11 +983,9 @@ const ACADEMIC = {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // تحديد دور المستخدم
-  userRole = localStorage.getItem(ROLE_KEY) || 'visitor';
-  const roleDisplay = document.getElementById('roleDisplay');
-  if (roleDisplay) roleDisplay.textContent = userRole === 'admin' ? 'مسؤول' : 'زائر';
-  updateUIBasedOnRole();
+  // تهيئة Firebase — يستمع لحالة المصادقة تلقائياً
+  initFirebaseAuth();
+  updateAuthButton();   // الحالة الأولية: زائر
   
   projects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
   
@@ -1167,23 +1360,30 @@ function clearFilters() { document.getElementById('searchInput').value = ''; doc
 
 function updateUIBasedOnRole() {
   const isAdmin = userRole === 'admin';
-  // إخفاء/إظهار كل عناصر admin-only دفعة واحدة
-  document.querySelectorAll('.admin-only').forEach(el => {
-    el.style.display = isAdmin ? (el.tagName === 'SPAN' || el.tagName === 'TH' ? '' : 'flex') : 'none';
-  });
-  // عمود الإجراءات في الجدول يحتاج display:table-cell
-  const actionsHeader = document.getElementById('actionsHeader');
-  if (actionsHeader) actionsHeader.style.display = isAdmin ? 'table-cell' : 'none';
-}
 
-function toggleUserRole() {
-  userRole = userRole === 'admin' ? 'visitor' : 'admin';
-  localStorage.setItem(ROLE_KEY, userRole);
-  updateUIBasedOnRole();
-  renderTable(projects);
-  const roleDisplay = document.getElementById('roleDisplay');
-  if (roleDisplay) roleDisplay.textContent = userRole === 'admin' ? 'مسؤول' : 'زائر';
-  showToast(userRole === 'admin' ? 'تم التبديل إلى وضع المسؤول' : 'تم التبديل إلى وضع الزائر', 'success');
+  document.querySelectorAll('.admin-only').forEach(el => {
+    // إزالة كل كلاسات الإظهار أولاً
+    el.classList.remove('is-visible-flex', 'is-visible-table-cell', 'is-visible-inline-flex');
+    if (isAdmin) {
+      // تحديد نوع الـ display الصحيح بحسب العنصر
+      if (el.tagName === 'TH' || el.tagName === 'TD') {
+        el.classList.add('is-visible-table-cell');
+      } else if (el.tagName === 'SPAN' || el.tagName === 'A') {
+        el.classList.add('is-visible-inline-flex');
+      } else {
+        el.classList.add('is-visible-flex');
+      }
+    }
+    // عدم الإظهار = لا نضيف شيئاً، يبقى display:none !important من CSS
+  });
+
+  // شريط آخر مزامنة — مخفي للزوار
+  const syncBar = document.getElementById('lastSyncTime');
+  if (syncBar) syncBar.style.visibility = isAdmin ? 'visible' : 'hidden';
+
+  // بانر GAS — للمسؤول فقط
+  const gasBanner = document.getElementById('gasBanner');
+  if (gasBanner && !isAdmin) gasBanner.classList.add('hidden');
 }
 
 
