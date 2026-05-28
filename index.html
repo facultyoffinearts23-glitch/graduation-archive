@@ -321,6 +321,31 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
                         <i class="fa-solid fa-plus text-base"></i>
                         <span>إضافة مشروع</span>
                     </button>
+
+                    <!-- زر التصدير — للمسؤولين فقط -->
+                    <div class="admin-only relative group">
+                      <button id="exportMenuBtn"
+                          onclick="toggleExportMenu()"
+                          class="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl text-sm shadow-lg transition-all duration-200 transform active:scale-95 min-w-[160px]">
+                          <i class="fa-solid fa-file-export text-base"></i>
+                          <span>تصدير البيانات</span>
+                          <i class="fa-solid fa-chevron-down text-xs"></i>
+                      </button>
+                      <!-- قائمة التصدير المنسدلة -->
+                      <div id="exportMenu" class="hidden absolute left-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+                          <button onclick="exportToExcel(); toggleExportMenu()"
+                              class="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 font-bold transition">
+                              <i class="fa-solid fa-file-excel text-emerald-600 text-base"></i>
+                              تصدير Excel
+                          </button>
+                          <div class="border-t border-gray-100"></div>
+                          <button onclick="exportToCSV(); toggleExportMenu()"
+                              class="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 font-bold transition">
+                              <i class="fa-solid fa-file-csv text-blue-600 text-base"></i>
+                              تصدير CSV
+                          </button>
+                      </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1334,14 +1359,63 @@ async function printProject(id) {
 }
 
 function exportToCSV() {
-  if (projects.length === 0) return;
+  if (userRole !== 'admin') { showToast('صلاحية التصدير للمسؤولين فقط', 'error'); return; }
+  if (projects.length === 0) { showToast('لا توجد بيانات للتصدير', 'error'); return; }
   const headers = ['رقم القيد', 'اسم الطالب', 'القسم', 'البرنامج', 'سنة التخرج', 'عنوان المشروع', 'المشرف', 'الدرجة'];
-  const rows = projects.map(p => [p.studentId, p.studentName, p.department, p.program, p.graduationYear, p.projectTitle, p.supervisor, p.score]);
+  const rows = projects.map(p => [
+    '"' + (p.studentId||'').replace(/"/g,'""') + '"',
+    '"' + (p.studentName||'').replace(/"/g,'""') + '"',
+    '"' + (p.department||'').replace(/"/g,'""') + '"',
+    '"' + (p.program||'').replace(/"/g,'""') + '"',
+    p.graduationYear,
+    '"' + (p.projectTitle||'').replace(/"/g,'""') + '"',
+    '"' + (p.supervisor||'').replace(/"/g,'""') + '"',
+    p.score
+  ]);
   let csvContent = "\uFEFF" + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.setAttribute("download", "graduation_projects.csv");
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.setAttribute("download", "graduation_projects.csv");
   document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  showToast('تم تصدير ملف CSV بنجاح', 'success');
 }
+
+function exportToExcel() {
+  if (userRole !== 'admin') { showToast('صلاحية التصدير للمسؤولين فقط', 'error'); return; }
+  if (projects.length === 0) { showToast('لا توجد بيانات للتصدير', 'error'); return; }
+  const headers = ['رقم القيد', 'اسم الطالب', 'القسم', 'البرنامج', 'سنة التخرج', 'عنوان المشروع', 'المشرف', 'الدرجة'];
+  const rows = projects.map(p => [p.studentId, p.studentName, p.department, p.program, p.graduationYear, p.projectTitle, p.supervisor, p.score]);
+  const escape = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const allRows = [headers, ...rows].map(row =>
+    '<Row>' + row.map(cell =>
+      '<Cell><Data ss:Type="String">' + escape(cell) + '</Data></Cell>'
+    ).join('') + '</Row>'
+  ).join('');
+  const xml = '<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?>' +
+    '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">' +
+    '<Worksheet ss:Name="Projects"><Table>' + allRows + '</Table></Worksheet></Workbook>';
+  const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.setAttribute("download", "graduation_projects.xls");
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  showToast('تم تصدير ملف Excel بنجاح', 'success');
+}
+
+function toggleExportMenu() {
+  if (userRole !== 'admin') return;
+  const menu = document.getElementById('exportMenu');
+  if (menu) menu.classList.toggle('hidden');
+}
+
+document.addEventListener('click', function(e) {
+  const btn = document.getElementById('exportMenuBtn');
+  const menu = document.getElementById('exportMenu');
+  if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
+    menu.classList.add('hidden');
+  }
+});
 
 function showToast(msg, type = 'success') {
   const toast = document.getElementById('toast'); document.getElementById('toastMsg').textContent = msg;
