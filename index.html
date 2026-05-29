@@ -311,7 +311,7 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
                    
                     </button>
                     <a href="https://arts-digital-library.web.app/" target="_blank" rel="noopener"
-                        class="flex items-center justify-center gap-2 bg-[#d4af37] hover:bg-[#c5a02e] text-blue-950 font-bold py-3 px-6 rounded-xl text-sm shadow-lg transition-all duration-200 transform active:scale-95 min-w-[160px]">
+                        class="flex items-center justify-center gap-2 bg-green-700 hover:bg-green-800 text-white font-bold py-3 px-6 rounded-xl text-sm shadow-lg transition-all duration-200 transform active:scale-95 min-w-[160px]">
                         <i class="fa-solid fa-graduation-cap text-base"></i>
                         <span>المكتبة الرقمية</span>
                     </a>
@@ -326,7 +326,7 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
                     <div class="admin-only relative group">
                       <button id="exportMenuBtn"
                           onclick="toggleExportMenu()"
-                          class="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl text-sm shadow-lg transition-all duration-200 transform active:scale-95 min-w-[160px]">
+                          class="flex items-center justify-center gap-2 bg-green-700 hover:bg-green-800 text-white font-bold py-3 px-6 rounded-xl text-sm shadow-lg transition-all duration-200 transform active:scale-95 min-w-[160px]">
                           <i class="fa-solid fa-file-export text-base"></i>
                           <span>تصدير البيانات</span>
                           <i class="fa-solid fa-chevron-down text-xs"></i>
@@ -650,10 +650,7 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
                 <option value="" disabled selected>اختر البرنامج</option>
               </select>
             </div>
-            <div>
-              <label class="form-label">التخصص الدقيق</label>
-              <input id="f_specialization" class="form-input" type="text" placeholder="مثال: إخراج وتمثيل">
-            </div>
+
             <div>
               <label class="form-label">سنة التخرج <span class="text-red-500">*</span></label>
               <input id="f_graduationYear" class="form-input" required type="number" min="1990" max="2060" value="2026">
@@ -680,11 +677,11 @@ tbody tr:nth-child(even):hover { background: #eff4ff; }
               <input id="f_score" class="form-input" type="number" min="0" max="100" step="0.5" placeholder="مثال: 87">
             </div>
             <div class="sm:col-span-2">
-              <label class="form-label">رابط ملف المشروع (PDF)</label>
+              <label class="form-label">تحميل ملف المشروع (PDF)</label>
               <div class="flex gap-2">
-                <input id="f_pdfUrl" class="form-input flex-1" type="url" placeholder="https://drive.google.com/... أو أي رابط مباشر للملف">
+                <input id="f_pdfUrl" class="form-input flex-1" type="file" accept=".pdf" placeholder="اختر ملف PDF">
               </div>
-              <p class="text-xs text-gray-400 mt-1"><i class="fas fa-info-circle ml-1"></i>ارفع الملف على Google Drive أو أي خدمة سحابية ثم الصق الرابط هنا</p>
+              <p class="text-xs text-gray-400 mt-1"><i class="fas fa-info-circle ml-1"></i>اختر ملف PDF من جهازك لتحميله</p>
               <p id="pdfStatus" class="text-xs text-green-600 mt-1 font-semibold"></p>
             </div>
           </div>
@@ -848,8 +845,10 @@ let currentEditId = null;
 let userRole      = 'visitor';   // القيمة الافتراضية دائماً زائر
 
 const GAS_HARDCODED = 'https://script.google.com/macros/s/AKfycbydPqqiAaYhNpWu3NijFueGMpeUHo6XhD_jlZkD2tGq-fmJfLnVJKMCZECL8GjAzEq7hQ/exec';
-localStorage.setItem(GAS_URL_KEY, GAS_HARDCODED);
-let gasUrl = GAS_HARDCODED;
+if (!localStorage.getItem(GAS_URL_KEY)) {
+  localStorage.setItem(GAS_URL_KEY, GAS_HARDCODED);
+}
+let gasUrl = localStorage.getItem(GAS_URL_KEY) || GAS_HARDCODED;
 
 // ══════════════════════════════════════════════════════════
 // تهيئة Firebase والاستماع لحالة المصادقة
@@ -1004,6 +1003,11 @@ const ACADEMIC = {
   'قسم التصميم الداخلي': ['برنامج التصميم الداخلي']
 };
 
+// تسجيل Service Worker لدعم العمل بدون إنترنت
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('data:application/javascript;base64,CmlmICghc2VsZi5jYWNoZXMpIHNlbGYuY2FjaGVzID0ge307Cgpjb25zdCBDQUNIRV9OQU1FID0gJ2ZhZF9hcmNoaXZlX3YzJzsKCnNlbGYuYWRkRXZlbnRMaXN0ZW5lcignaW5zdGFsbCcsIChldmVudCkgPT4gewogIGV2ZW50LndhaXRVbnRpbChzZWxmLmNhY2hlcy5vcGVuKENBQ0hFX05BTUUpLnRoZW4oY2FjaGUgPT4gewogICAgcmV0dXJuIGNhY2hlLmFkZEFsbChbCiAgICAgICcvJywKICAgICAgJy9pbmRleC5odG1sJwogICAgXSk7CiAgfSkpOwp9KTsKCnNlbGYuYWRkRXZlbnRMaXN0ZW5lcignZmV0Y2gnLCAoZXZlbnQpID0+IHsKICBpZiAoZXZlbnQucmVxdWVzdC5tZXRob2QgIT09ICdHRVQnKSByZXR1cm47CiAgCiAgZXZlbnQucmVzcG9uZFdpdGgoY2FjaGVzLm1hdGNoKGV2ZW50LnJlcXVlc3QpLnRoZW4oKHJlc3BvbnNlKSA9PiB7CiAgICBpZiAocmVzcG9uc2UpIHJldHVybiByZXNwb25zZTsKICAgIAogICAgcmV0dXJuIGZldGNoKGV2ZW50LnJlcXVlc3QpLnRoZW4oKHJlc3BvbnNlKSA9PiB7CiAgICAgIGlmICghcmVzcG9uc2UgfHwgcmVzcG9uc2Uuc3RhdHVzICE9PSAyMDAgfHwgcmVzcG9uc2UudHlwZSAhPT0gJ2Jhc2ljJykgewogICAgICAgIHJldHVybiByZXNwb25zZTsKICAgICAgfQogICAgICAKICAgICAgY29uc3QgcmVzcG9uc2VUb0NhY2hlID0gcmVzcG9uc2UuY2xvbmUoKTsKICAgICAgY2FjaGVzLm9wZW4oQ0FDSEVfTkFNRSkudGhlbigoY2FjaGUpID0+IHsKICAgICAgICBjYWNoZS5wdXQoZXZlbnQucmVxdWVzdCwgcmVzcG9uc2VUb0NhY2hlKTsKICAgICAgfSk7CiAgICAgIAogICAgICByZXR1cm4gcmVzcG9uc2U7CiAgICB9KS5jYXRjaCgoKSA9PiB7CiAgICAgIHJldHVybiBjYWNoZXMubWF0Y2goZXZlbnQucmVxdWVzdCk7CiAgICB9KTsKICB9KSk7Cn0pOwo=').catch(err => console.log('SW registration failed:', err));
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   // تهيئة Firebase — يستمع لحالة المصادقة تلقائياً
   initFirebaseAuth();
@@ -1146,12 +1150,16 @@ async function saveProject() {
   hideFormError();
   setSaveLoading(true);
   const score = document.getElementById('f_score').value;
-  const finalPdfRef = document.getElementById('f_pdfUrl').value.trim();
+  const pdfInput = document.getElementById('f_pdfUrl');
+  let finalPdfRef = '';
+  if (pdfInput.files && pdfInput.files.length > 0) {
+    finalPdfRef = pdfInput.files[0].name;
+  }
   const project = {
     id: currentEditId || ('PRJ_' + Date.now()), studentId, studentName,
     department: document.getElementById('f_department').value,
     program: document.getElementById('f_program').value,
-    specialization: document.getElementById('f_specialization').value.trim(),
+
     enrollmentYear: document.getElementById('f_enrollmentYear').value,
     graduationYear: document.getElementById('f_graduationYear').value,
     projectTitle: document.getElementById('f_projectTitle').value.trim(),
@@ -1304,7 +1312,7 @@ function viewProject(id) {
       <div class="bg-white rounded-2xl border-r-4 border-primary p-5 shadow-sm"><h4 class="text-xl font-black text-gray-800 leading-snug">${p.projectTitle}</h4><div class="flex flex-wrap gap-2 mt-3"><span class="badge bg-slate-100 text-slate-600 border-slate-200"><i class="fas fa-calendar-alt"></i> دفعة ${p.graduationYear}</span></div></div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100"><p class="text-xs font-black text-gray-400 uppercase tracking-wider mb-3 border-b pb-2"><i class="fas fa-user-graduate ml-1"></i> معلومات الطالب</p><p class="text-lg font-black text-gray-900 mb-2">${p.studentName}</p><div class="space-y-1.5 text-sm"><div class="flex justify-between"><span class="text-gray-400">رقم القيد</span><span class="font-bold">${studentIdDisplay}</span></div>${(userRole === 'admin' && p.enrollmentYear) ? `<div class="flex justify-between"><span class="text-gray-400">سنة الالتحاق</span><span class="font-bold">${p.enrollmentYear}</span></div>` : ''}</div></div>
-        <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100"><p class="text-xs font-black text-gray-400 uppercase tracking-wider mb-3 border-b pb-2"><i class="fas fa-university ml-1"></i> معلومات أكاديمية</p><p class="font-black text-gray-900">${p.department}</p><p class="text-sm text-gray-500 mt-0.5">${p.program}</p>${p.specialization ? `<p class="text-xs text-gray-400 mt-0.5">${p.specialization}</p>` : ''}<div class="mt-3 pt-3 border-t border-gray-50 space-y-1.5 text-sm"><div class="flex justify-between items-center"><span class="text-gray-400">المشرف</span><span class="font-bold">${p.supervisor}</span></div><div class="flex justify-between items-center"><span class="text-gray-400">التقييم</span>${gradeBadge}</div></div></div>
+        <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100"><p class="text-xs font-black text-gray-400 uppercase tracking-wider mb-3 border-b pb-2"><i class="fas fa-university ml-1"></i> معلومات أكاديمية</p><p class="font-black text-gray-900">${p.department}</p><p class="text-sm text-gray-500 mt-0.5">${p.program}</p><div class="mt-3 pt-3 border-t border-gray-50 space-y-1.5 text-sm"><div class="flex justify-between items-center"><span class="text-gray-400">المشرف</span><span class="font-bold">${p.supervisor}</span></div><div class="flex justify-between items-center"><span class="text-gray-400">التقييم</span>${gradeBadge}</div></div></div>
         <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 sm:col-span-2"><p class="text-xs font-black text-gray-400 uppercase tracking-wider mb-3"><i class="fas fa-paperclip ml-1"></i> مرفقات المشروع</p>${pdfLink}</div>
       </div>
     </div>
@@ -1322,10 +1330,10 @@ function editProject(id) {
   document.getElementById('saveBtnText').textContent = 'تحديث البيانات';
   document.getElementById('f_studentId').value = p.studentId; document.getElementById('f_studentName').value = p.studentName;
   document.getElementById('f_department').value = p.department; updatePrograms();
-  document.getElementById('f_program').value = p.program; document.getElementById('f_specialization').value = p.specialization || '';
+  document.getElementById('f_program').value = p.program;
   document.getElementById('f_enrollmentYear').value = p.enrollmentYear || ''; document.getElementById('f_graduationYear').value = p.graduationYear;
   document.getElementById('f_projectTitle').value = p.projectTitle; document.getElementById('f_supervisor').value = p.supervisor;
-  document.getElementById('f_score').value = p.score || ''; document.getElementById('f_pdfUrl').value = p.pdfUrl || '';
+  document.getElementById('f_score').value = p.score || '';
   document.getElementById('pdfStatus').textContent = p.pdfUrl ? 'يوجد ملف مرفق مسبقاً' : '';
   openModal('addModal');
 }
@@ -1350,7 +1358,7 @@ async function printProject(id) {
       const qrFallback = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(p.studentName + '\n' + p.studentId)}`;
       qrHtml = `<img src="${qrFallback}" alt="QR Code" style="width:100%;height:100%;display:block" crossorigin="anonymous">`;
     }
-    const printContent = `<div style="direction:rtl;font-family:'Cairo',sans-serif;color:#000;max-width:800px;margin:0 auto;padding:18px;position:relative"><div style="position:absolute;top:18px;left:18px;width:95px;height:95px;border:2px solid #1e3a8a;padding:3px;border-radius:5px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12)">${qrHtml}</div><div style="text-align:center;border-bottom:2.5px solid #1e3a8a;padding-bottom:10px;margin-bottom:14px"><img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663672341033/DPcqnCesIGqshKoH.webp" alt="شعار الكلية" style="width:100px;height:100px;object-fit:contain;margin-bottom:4px"><h1 style="font-size:20px;font-weight:900;margin:4px 0 0;color:#1e3a8a">جامعة طرابلس</h1><h2 style="font-size:14px;font-weight:700;margin:2px 0 0;color:#333">كلية الفنون والتصميم</h2><p style="font-size:11px;font-weight:bold;color:#555;margin:5px 0 0;text-decoration:underline;letter-spacing:.02em">بطاقة بيانات مشروع تخرج</p></div><div style="text-align:center;margin-bottom:14px;background:#f4f6ff;padding:10px 14px;border-radius:7px;border:1px solid #dde3ff"><p style="font-size:10px;color:#777;margin:0 0 5px;font-weight:bold;text-transform:uppercase;letter-spacing:.05em">عنوان مشروع التخرج</p><h2 style="font-size:15px;font-weight:900;margin:0;color:#1e3a8a;line-height:1.45">${p.projectTitle}</h2></div><table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px"><tbody>${[['اسم الطالب', p.studentName, true], ['رقم القيد', p.studentId, false], ['القسم العلمي', p.department, false], ['البرنامج التخصصي', p.program, false], ['التخصص الدقيق', p.specialization || '—', false], ['سنة الالتحاق', p.enrollmentYear || '—', false], ['سنة التخرج', String(p.graduationYear), false], ['الأستاذ المشرف', p.supervisor, false], ['التقييم النهائي', gradeText, true]].map(([lbl, val, bold]) => `<tr><td style="border:1px solid #ccc;padding:7px 10px;width:33%;background:#eef2ff;font-weight:bold;font-size:11px;color:#1e3a8a">${lbl}</td><td style="border:1px solid #ccc;padding:7px 10px;${bold ? 'font-weight:900;font-size:13px;color:#111' : 'font-size:11px;color:#333'}">${val}</td></tr>`).join('')}</tbody></table><div style="border-top:1px dashed #bbb;padding-top:14px;display:flex;justify-content:flex-end;align-items:flex-end"><div style="text-align:center;width:44%"><p style="font-size:11px;font-weight:bold;margin:0 0 6px;color:#1e3a8a">مسؤول مكتبة الكلية</p><p style="letter-spacing:4px;color:#bbb;font-size:13px;margin:0 0 4px;line-height:1">. . . . . . . . . . . . . . . .</p><p style="font-size:9px;color:#666;margin:4px 0 0">التاريخ: ___________</p></div></div><div style="margin-top:14px;text-align:center;font-size:9px;color:#999;border-top:1px solid #ddd;padding-top:8px">طُبعت هذه البطاقة من منظومة أرشفة مشاريع التخرج — كلية الفنون والتصميم | تاريخ الطباعة: ${today}</div></div>`;
+    const printContent = `<div style="direction:rtl;font-family:'Cairo',sans-serif;color:#000;max-width:800px;margin:0 auto;padding:18px;position:relative"><div style="position:absolute;top:18px;left:18px;width:95px;height:95px;border:2px solid #1e3a8a;padding:3px;border-radius:5px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12)">${qrHtml}</div><div style="text-align:center;border-bottom:2.5px solid #1e3a8a;padding-bottom:10px;margin-bottom:14px"><img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663672341033/DPcqnCesIGqshKoH.webp" alt="شعار الكلية" style="width:100px;height:100px;object-fit:contain;margin-bottom:4px"><h1 style="font-size:20px;font-weight:900;margin:4px 0 0;color:#1e3a8a">جامعة طرابلس</h1><h2 style="font-size:14px;font-weight:700;margin:2px 0 0;color:#333">كلية الفنون والتصميم</h2><p style="font-size:11px;font-weight:bold;color:#555;margin:5px 0 0;text-decoration:underline;letter-spacing:.02em">بطاقة بيانات مشروع تخرج</p></div><div style="text-align:center;margin-bottom:14px;background:#f4f6ff;padding:10px 14px;border-radius:7px;border:1px solid #dde3ff"><p style="font-size:10px;color:#777;margin:0 0 5px;font-weight:bold;text-transform:uppercase;letter-spacing:.05em">عنوان مشروع التخرج</p><h2 style="font-size:15px;font-weight:900;margin:0;color:#1e3a8a;line-height:1.45">${p.projectTitle}</h2></div><table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px"><tbody>${[['اسم الطالب', p.studentName, true], ['رقم القيد', p.studentId, false], ['القسم العلمي', p.department, false], ['البرنامج التخصصي', p.program, false],  ['سنة الالتحاق', p.enrollmentYear || '—', false], ['سنة التخرج', String(p.graduationYear), false], ['الأستاذ المشرف', p.supervisor, false], ['التقييم النهائي', gradeText, true]].map(([lbl, val, bold]) => `<tr><td style="border:1px solid #ccc;padding:7px 10px;width:33%;background:#eef2ff;font-weight:bold;font-size:11px;color:#1e3a8a">${lbl}</td><td style="border:1px solid #ccc;padding:7px 10px;${bold ? 'font-weight:900;font-size:13px;color:#111' : 'font-size:11px;color:#333'}">${val}</td></tr>`).join('')}</tbody></table><div style="border-top:1px dashed #bbb;padding-top:14px;display:flex;justify-content:flex-end;align-items:flex-end"><div style="text-align:center;width:44%"><p style="font-size:11px;font-weight:bold;margin:0 0 6px;color:#1e3a8a">مسؤول مكتبة الكلية</p><p style="letter-spacing:4px;color:#bbb;font-size:13px;margin:0 0 4px;line-height:1">. . . . . . . . . . . . . . . .</p><p style="font-size:9px;color:#666;margin:4px 0 0">التاريخ: ___________</p></div></div><div style="margin-top:14px;text-align:center;font-size:9px;color:#999;border-top:1px solid #ddd;padding-top:8px">طُبعت هذه البطاقة من منظومة أرشفة مشاريع التخرج — كلية الفنون والتصميم | تاريخ الطباعة: ${today}</div></div>`;
     document.getElementById('printArea').innerHTML = printContent;
     const imgs = [...document.getElementById('printArea').querySelectorAll('img')];
     await Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise(res => { img.onload = res; img.onerror = res; })));
@@ -1420,7 +1428,7 @@ document.addEventListener('click', function(e) {
 function showToast(msg, type = 'success') {
   const toast = document.getElementById('toast'); document.getElementById('toastMsg').textContent = msg;
   toast.className = `fixed bottom-5 right-5 z-[9999] flex items-center gap-3 bg-white border-r-4 ${type==='success'?'border-green-500':'border-red-500'} rounded-xl shadow-2xl px-5 py-3.5 max-w-sm transition-all duration-300 opacity-100 translate-y-0`;
-  setTimeout(() => { toast.classList.add('opacity-0', 'translate-y-20'); }, 3000);
+  setTimeout(() => { toast.classList.add('opacity-0', 'translate-y-20'); }, 5000);
 }
 
 function showFormError(msg) { const err = document.getElementById('formError'); document.getElementById('formErrorText').textContent = msg; err.classList.remove('hidden'); }
